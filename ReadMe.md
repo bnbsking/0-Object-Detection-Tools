@@ -7,5 +7,3 @@ Object detection format overview
 | type | int | float | int |
 | classes | - | classes.txt | D['categories'] |
 | raw shape | height,width | - | D['images'] |
-
-+ VOC
