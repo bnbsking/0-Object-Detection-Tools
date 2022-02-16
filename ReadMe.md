@@ -6,4 +6,4 @@ Object detection format overview
 | format | xmin,ymin,xmax,ymax | cx,cy,w,h | xmin,ymin,w,h |
 | type | int | float | int |
 | classes | - | classes.txt | D['categories'] |
-| raw shape | <height><width> | - | D['images'] |
+| raw shape | height,width | - | D['images'] |
