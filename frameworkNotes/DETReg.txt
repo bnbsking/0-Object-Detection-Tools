@@ -1,0 +1,39 @@
+git clone https://github.com/amirbar/detreg
+Download Colab pretask inference code:
+https://colab.research.google.com/drive/1ByFXJClyzNVelS7YdT53_bMbwYeMoeNb?usp=sharing
+
+Environment:
++ A100, Ubuntu 20.04, Python 3.7.11
++ torch 1.8.1+cu111
++ Compiling CUDA operators
++ pip install -r requirements.txt
+
+Download dataset to ./data in standard format:
+ImageNet100, MSCoco
+
+Create code:
++ pretask:
+    + load_simsiam.py (trained by lightly)    https://docs.lightly.ai/tutorials/package/tutorial_simsiam_esa.html (customize model I/O and trainingPlot)
+    + plotLoss.ipynb
++ downstream:
+    + plotLoss.ipynb
+    + visualization.ipynb
+    + convert.ipynb
+    + myDataset.py
+
+Modify scripts:
++ models/_init_.py - build_model: num_classes
++ engine.py - viz:
+    + break condition
+    + print overall confidence, classIDs, bboxes.
+    + Shape revision for raw Coco dataset
++ main.py:
+    + replace swav_model
+    + replace dataset (downstream only)
+    + evaluate coco (downstream only)
+
+Pretask training:
++ Pretrain:
+    python -u main.py --output_dir exps/DETReg_top30_in --dataset imagenet100 --strategy topk --load_backbone swav --max_prop 30 --object_embedding_loss --lr_backbone 0 --epochs 60 --batch_size 24 --num_workers 1
++ Finetune (args.viz=False) / Finetune-Inference (args.viz=True):
+    python -u main.py --output_dir exps/DETReg_fine_tune_full_coco --dataset coco --pretrain exps/DETReg_top30_in/checkpoint.pth --batch_size 4 --num_workers 1 --epochs 60
