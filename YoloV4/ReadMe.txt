@@ -1,4 +1,4 @@
-git clone https://github.com/WongKinYiu/PyTorch_YOLOv4
+git clone https://github.com/WongKinYiu/PyTorch_YOLOv4 # Do not use PT10
 conda create -n pt9 python=3.6
 conda install pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=10.2 -c pytorch
 
