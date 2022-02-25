@@ -40,35 +40,31 @@ class MyDataset(Dataset):
              "size":torch.Tensor([x.shape[0],x.shape[1]]), #.to(self.device),
             }
         return x, D
-    
-def my_datasets(): # from yolo to DETReg dataset for
-    path = "/home/jovyan/data-vol-2/recycling/0505DF/label"
-    imgPreS = set(map(lambda s:s.split("/")[-1][:-4], glob.glob(path+"/*.jpg")))
-    antPreS = set(map(lambda s:s.split("/")[-1][:-4], glob.glob(path+"/*.txt")))
+
+blackList = ["1029_1112_00267"]
+def my_datasets(path="/home/jovyan/data-vol-1/detreg/data/ilsvrc100/train/2d", ratio=0.8): # yoloFloat format
+    imgPreS, antPreS = set(), set()
+    for imgPath in glob.glob(path+"/*.jpg"):
+        imgPre  = imgPath.split("/")[-1].split(".")[0]
+        if imgPre not in blackList:
+            imgPreS.add(imgPre)
+    for antPath in glob.glob(path+"/*.txt"):
+        antPre  = antPath.split("/")[-1].split(".")[0]
+        if antPre not in blackList:
+            antPreS.add(antPre)
     intPreS = imgPreS.intersection(antPreS)
-    print( len(imgPreS), len(antPreS), len(intPreS) )
+    print(f"len(imgPretextSet)={len(imgPreS)}\nlen(antPretextSet)={len(antPreS)}\nlen(intPretextSet)={len(intPreS)}")
+    
     imgPathList = list(map(lambda s:f"{path}/{s}.jpg", sorted(list(intPreS)) ))
     antPathList = list(map(lambda s:f"{path}/{s}.txt", sorted(list(intPreS)) ))
-    n = int(len(imgPathList)*0.8)
+    n = int(len(imgPathList)*ratio)
     trainPathList, trainAnnotPathList = imgPathList[:n], antPathList[:n]
     valPathList, valAnnotPathList = imgPathList[n:], antPathList[n:]
     device = torch.device('cuda')
     train_dataset = MyDataset(trainPathList,trainAnnotPathList,range(0,n))
     val_dataset   = MyDataset(valPathList,valAnnotPathList,range(n,len(intPreS)))
+    print("train dataset path example:", train_dataset.pathList[0])
+    print("valid dataset path example:", val_dataset.pathList[0])
     return train_dataset, val_dataset
 
 my_datasets()
-"""
-train_dataset, val_dataset = my_datasets()
-for x,myD in train_dataset:
-    print(x.shape)
-    print(myD)
-    print("dataset testing succeed")
-    break
-    
-train_dataloader = DataLoader(train_dataset, batch_size=4, pin_memory=False)
-for ele in train_dataloader:
-    print(ele)
-    print("dataloader testing succeed")
-    break
-"""
