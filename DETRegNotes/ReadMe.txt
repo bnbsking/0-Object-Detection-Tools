@@ -27,10 +27,11 @@ Modify scripts:
     + break condition
     + print overall confidence, classIDs, bboxes.
     + Shape revision for raw Coco dataset
++ engine.py - train_one_epoch:
+    + evaluate coco (downstream only)
 + main.py:
     + replace swav_model
     + replace dataset (downstream only)
-    + evaluate coco (downstream only)
 
 Pretask training:
 + Pretrain:
