@@ -19,4 +19,7 @@
   + TN: repeat detect or conf<confThreshold and IOU>=iouThreshold
   + FN: IOU<iouThreshold
 + precision-recall curve by confThreshold
-+ AP = area under "smmoth" PR-curve
++ AP = area under "smooth" PR-curve e.g. 1 if precision=recall=1
++ mAP = average AP among categories
+  + mAP50: (default) iouThreshold=0.5
+  + mAP75: iouThreshold=0.75
