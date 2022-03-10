@@ -11,3 +11,12 @@
 | type | int | float | int |
 | classes | - | classes.txt | D['categories'] |
 | raw shape | height,width | - | D['images'] |
+
+#### More concepts
++ IOU
++ precision and recall:
+  + TP: conf>=confThreshold and IOU>=iouThreshold
+  + TN: repeat detect or conf<confThreshold and IOU>=iouThreshold
+  + FN: IOU<iouThreshold
++ precision-recall curve by confThreshold
++ AP = area under "smmoth" PR-curve
