@@ -8,9 +8,11 @@ convert.ipynb
 
 vim coco.yaml
 vim coco.name
-vim cfg/yolov4-pacsp.cfg -> classes and filters
+vim cfg/yolov4-pacsp.cfg -> classes=class and filters=(class+5)*3
 
 python3 train.py --device 0 --batch-size 1 --img 640 640 --data data/coco.yaml --cfg cfg/yolov4-pacsp.cfg --weights '' --name yolov4-pacsp --epochs 1
 copy weight from runs/train/yolov4-pacsp/weights
+
+vim test.py -> line 106: if True: x, y, w, h, conf = float(x), float(y), float(w), float(h), float(conf)
 python3 test.py --device 0 --batch 1 --img 640 --conf 0.001 --data data/coco.yaml --cfg cfg/yolov4-pacsp.cfg --weights weights/best.pt
 Get bounding box in test.py line 224 “plot_images(img, targets, paths, f, names)”. Targets.shape = bz*(class,1-conf,cx,cy,w,h)
