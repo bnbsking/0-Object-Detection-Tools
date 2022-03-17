@@ -33,8 +33,18 @@ Modify scripts:
     + replace swav_model
     + replace dataset (downstream only)
 
-Pretask training:
+Training and visualization:
 + Pretrain:
     python -u main.py --output_dir exps/DETReg_top30_in --dataset imagenet100 --strategy topk --load_backbone swav --max_prop 30 --object_embedding_loss --lr_backbone 0 --epochs 60 --batch_size 24 --num_workers 1
-+ Finetune (args.viz=False) / Finetune-Inference (args.viz=True):
++ Pretrain Inference:
+    python zColabInference.py
++ Finetune (args.viz=False):
     python -u main.py --output_dir exps/DETReg_fine_tune_full_coco --dataset coco --pretrain exps/DETReg_top30_in/checkpoint.pth --batch_size 4 --num_workers 1 --epochs 60
++ Finetune Inference (args.viz=True):
+    python -u main.py --output_dir exps/DETReg_fine_tune_full_coco --dataset coco --pretrain exps/DETReg_fine_tune_full_coco/checkpoint.pth --batch_size 1 --num_workers 1
+
+AP Calculation: https://github.com/Cartucho/mAP
++ GT stored in a folder with *.txt
++ Result stored in a folder with *.txt
++ format: “class conf xmin ymin xmax ymax\n“
++ python main.py -na
