@@ -1,5 +1,7 @@
 git clone https://github.com/amirbar/detreg
+
 Download Colab pretask inference code:
+
 https://colab.research.google.com/drive/1ByFXJClyzNVelS7YdT53_bMbwYeMoeNb?usp=sharing
 
 Environment:
@@ -8,8 +10,7 @@ Environment:
 + Compiling CUDA operators
 + pip install -r requirements.txt
 
-Download dataset to ./data in standard format:
-ImageNet100, MSCoco
+Download dataset to ./data in standard format: ImageNet100, MSCoco
 
 Create code:
 + pretask:
