@@ -1,4 +1,4 @@
-import glob, os
+import glob, os, random
 import numpy as np
 import cv2
 import torch
@@ -9,6 +9,7 @@ class MyDataset(Dataset):
         self.pathList = pathList
         self.annotList = annotList
         self.idList = idList
+        #self.more()
     def __len__(self):
         return len(self.pathList)
     def __getitem__(self, index):
@@ -40,31 +41,65 @@ class MyDataset(Dataset):
              "size":torch.Tensor([x.shape[0],x.shape[1]]), #.to(self.device),
             }
         return x, D
+    
+    def more(self):
+        self.getImgIds = lambda : self.idList
+        self.CatIds = lambda : [0,1,2,3,4]
+        self.dataset = {"images":[], "categories":[]}
+        for path,id in zip(self.pathList,self.idList):
+            x = cv2.imread( path )
+            imgD = {'license':0, 'file_name':path.split('/')[-1], 'coco_url':'', 'height':x.shape[0], 'width':x.shape[1], 'date_captured':'', 'flickr_url':'', 'id':id}
+            self.dataset['images'].append( imgD )
+        for id,name in zip(range(5),['PLC','nPLC','PAC','nPAC','FOIL']):
+            self.dataset['categories'].append( {'supercategory':'trash', 'id':id, 'name':name} )
+        from pycocotools.coco import COCO
+        self.coco = COCO("data/labv2coco/labels.json")
+        self.getAnnIds = self.coco.getAnnIds
+        self.loadAnns  = self.coco.loadAnns
 
 blackList = ["1029_1112_00267"]
-def my_datasets(path="/home/jovyan/data-vol-1/detreg/data/ilsvrc100/train/2d", ratio=0.8): # yoloFloat format
-    imgPreS, antPreS = set(), set()
-    for imgPath in glob.glob(path+"/*.jpg"):
-        imgPre  = imgPath.split("/")[-1].split(".")[0]
-        if imgPre not in blackList:
-            imgPreS.add(imgPre)
-    for antPath in glob.glob(path+"/*.txt"):
-        antPre  = antPath.split("/")[-1].split(".")[0]
-        if antPre not in blackList:
-            antPreS.add(antPre)
-    intPreS = imgPreS.intersection(antPreS)
-    print(f"len(imgPretextSet)={len(imgPreS)}\nlen(antPretextSet)={len(antPreS)}\nlen(intPretextSet)={len(intPreS)}")
+def my_datasets(trainValPath="data/labv2/train/2d", testPath="data/labv2/test/2d", ratio=0.8): # includes .jpg and .txt in yolo format
     
-    imgPathList = list(map(lambda s:f"{path}/{s}.jpg", sorted(list(intPreS)) ))
-    antPathList = list(map(lambda s:f"{path}/{s}.txt", sorted(list(intPreS)) ))
-    n = int(len(imgPathList)*ratio)
-    trainPathList, trainAnnotPathList = imgPathList[:n], antPathList[:n]
-    valPathList, valAnnotPathList = imgPathList[n:], antPathList[n:]
-    device = torch.device('cuda')
-    train_dataset = MyDataset(trainPathList,trainAnnotPathList,range(0,n))
-    val_dataset   = MyDataset(valPathList,valAnnotPathList,range(n,len(intPreS)))
-    print("train dataset path example:", train_dataset.pathList[0])
-    print("valid dataset path example:", val_dataset.pathList[0])
-    return train_dataset, val_dataset
+    def getIntersectionPretext(path):
+        imgPretextS, antPretextS = set(), set()
+        for imgPath in glob.glob(path+"/*.jpg"):
+            imgPretext = imgPath.split("/")[-1].split(".")[0]
+            if imgPretext not in blackList:
+                imgPretextS.add(imgPretext)
+        for antPath in glob.glob(path+"/*.txt"):
+            antPretext = antPath.split("/")[-1].split(".")[0]
+            if antPretext not in blackList:
+                antPretextS.add(antPretext)
+        pretextS = imgPretextS.intersection(antPretextS)
+        pretextL = sorted(list(pretextS))
+        print(len(pretextL))
+        return pretextL
+    
+    trainValL, testL = getIntersectionPretext(trainValPath), getIntersectionPretext(testPath) if testPath else []
+    random.Random(4).shuffle(trainValL)
+    
+    trainValL= trainValL[:int(1*len(trainValL))] # 1, 0.2, 0.05
+    trainValImgPathL = list(map(lambda s:f"{trainValPath}/{s}.jpg", list(trainValL) ))
+    trainValAntPathL = list(map(lambda s:f"{trainValPath}/{s}.txt", list(trainValL) ))
+    testImgPathL = list(map(lambda s:f"{testPath}/{s}.jpg", list(testL) ))
+    testAntPathL = list(map(lambda s:f"{testPath}/{s}.txt", list(testL) ))
+    
+    n = int(len(trainValL)*ratio)
+    trainImgPathL, valImgPathL = trainValImgPathL[:n], trainValImgPathL[n:]
+    trainAntPathL, valAntPathL = trainValAntPathL[:n], trainValAntPathL[n:]
+    
+    train_dataset = MyDataset(trainImgPathL,trainAntPathL,range(0,n))
+    val_dataset   = MyDataset(valImgPathL,valAntPathL,range(n,len(trainValL)))
+    test_dataset  = MyDataset(testImgPathL,testAntPathL,range(len(testL))) if testPath else val_dataset
+    if "test":
+        val_dataset = test_dataset
+    
+    print("train dataset path example:", train_dataset.pathList[:3])
+    print("valid dataset path example:", val_dataset.pathList[:3])
+    print("test dataset path example:", test_dataset.pathList[:3])
+    print(f"len(train_dataset)={len(train_dataset)}")
+    print(f"len(val_dataset)={len(val_dataset)}")
+    print(f"len(test_dataset)={len(test_dataset)}")
+    return train_dataset, val_dataset, test_dataset
 
-my_datasets()
+#my_datasets()

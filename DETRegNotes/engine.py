@@ -195,6 +195,16 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         stats['PQ_st'] = panoptic_res["Stuff"]
     return stats, coco_evaluator
 
+if True:
+    import cv2
+    from zDataset import my_datasets
+    from exps import visualization as vz
+    _, _, test_dataset = my_datasets()
+    classList = ["PlasticContainer", "Non-PlasticContainer", "PaperContainer", "Non-PaperContainer"] # "Foil"
+    save = "exps/labv2_messy3k_DETReg_fine_tune_full_coco"
+    os.makedirs(f"{save}/testBox", exist_ok=True)
+    os.makedirs(f"{save}/test", exist_ok=True)
+
 @torch.no_grad()
 def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_dir):
     import numpy as np
@@ -243,23 +253,12 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
         #plt.savefig(os.path.join(output_dir, f'img_{int(targets[0]["image_id"][0])}.jpg'))
         
         if True:
-            from zDataset import my_datasets
-            _, val_dataset = my_datasets()
-            imgPath, annotPath = val_dataset.pathList[j], val_dataset.annotList[j]
-            print( imgPath.split('/')[-1] )
-            from exps import visualization as vz
-            classList = ["PlasticContainer", "Non-PlasticContainer", "PaperContainer", "Non-PaperContainer"] # 1477, 346, 1398, 785
-            if False: #coco
-                imgPath = "/home/jovyan/data-vol-2/coco/val2017/" + ["000000000139.jpg", "000000000285.jpg", "000000000632.jpg", "000000000724.jpg", \
-                    "000000000776.jpg", "000000000785.jpg", "000000000802.jpg", "000000000872.jpg", "000000000885.jpg", "000000001000.jpg"][j]
-                annotPath = None
-                classList = []
-            
+            imgPath, annotPath = test_dataset.pathList[j], test_dataset.annotList[j]
             topScores = outputs['pred_logits'][0].softmax(-1)
-            threshold = 0.5 # 0.65 is good
+            threshold = 0.39 # 0.65, 0.5 is good # 0 if collect txt else plot
             keepIdx, conf, predCls = [], [], []
             for i in range(len(topScores)):
-                maxConf, maxConfIdx = float(topScores[i,:-1].max()), int(topScores[i,:-1].argmax())
+                maxConf, maxConfIdx = float(topScores[i,:-1].max()), int(topScores[i,:-1].argmax()) #
                 if maxConf >= threshold:
                     keepIdx.append( i )
                     conf.append( maxConf )
@@ -269,18 +268,27 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
             
             predictied_boxes, conf, predCls = predictied_boxes.cpu().numpy()[0] if len(predictied_boxes) else np.array([]), np.array(conf), np.array(predCls)
             adopt = vz.NMS(predictied_boxes, boxesType="yoloFloat", threshold=0.3)
-            print( "adopt:", adopt)
             topScores, predictied_boxes, conf, predCls = topScores[adopt], predictied_boxes[adopt], conf[adopt], predCls[adopt]
-            print( "topScores:", topScores ) # (K,classes+1)
-            print( "predictied_boxes:", predictied_boxes) # (K,4)
-            print( "conf:", conf) # (K,)
-            print( "predCls:", predCls) # (K,)
+            #print( imgPath.split('/')[-1] )
+            #print( "adopt:", adopt)
+            #print( "topScores:", topScores ) # (K,classes+1)
+            #print( "predictied_boxes:", predictied_boxes) # (K,4)
+            #print( "conf:", conf) # (K,)
+            #print( "predCls:", predCls) # (K,)
             
-            vz.show(imgPath, annotPath, "yoloFloat", predictied_boxes, predCls, conf, classList, (1.5,1.5))
-            
-        if j>=9:
-            break
-        print("-"*100)
+            #vz.show(imgPath, annotPath, "yoloFloat", predictied_boxes, predCls, conf, classList, save+"/testBox", (1.5,1.5))
+            with open(f"{save}/test/{annotPath.split('/')[-1]}", "w") as f:
+                height, width, _ = cv2.imread(imgPath).shape
+                for pcid, cf, (cx,cy,w,h) in zip(predCls,conf,predictied_boxes):
+                    xmin = int((float(cx)-float(w)/2)*width)
+                    ymin = int((float(cy)-float(h)/2)*height)
+                    xmax = int((float(cx)+float(w)/2)*width)
+                    ymax = int((float(cy)+float(h)/2)*height)
+                    f.write(f"{pcid} {cf} {xmin} {ymin} {xmax} {ymax}\n")
+            print(f"\r{j+1}/{len(data_loader)}", end="")
+            #if j>=20-1:
+            #    break
+            #print("-"*100)
 
 
 def get_ss_res(img, h, w, top_k):
