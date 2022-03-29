@@ -57,3 +57,4 @@ AP Calculation: https://github.com/Cartucho/mAP
 + Result stored in a folder with *.txt
 + format: “class conf xmin ymin xmax ymax\n“
 + python main.py -na
++ ranking.ipynb
