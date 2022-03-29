@@ -33,6 +33,14 @@ Modify scripts:
 + main.py:
     + replace swav_model
     + replace dataset (downstream only)
+    ```python
+    #dataset_train, dataset_val = get_datasets(args)
+    if False:
+        model.load_state_dict(torch.load("exps/official_weights/checkpoint_coco.pth"),strict=False)
+    if True:
+        from zDataset import my_datasets
+        dataset_train, dataset_val, dataset_test = my_datasets(trainValPath="data/labv2/train/clean2dr", testPath="data/labv2/test/clean2dr", test=False)
+        args.viz = False```
 
 Training and visualization:
 + Pretrain:
