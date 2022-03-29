@@ -2,6 +2,8 @@
 
 #### Visualization.ipynb: Plot ground truth and prediction result among various format
 
+#### Visualization.py: Plot ground truth and prediction result among various format
+
 #### Object detection format overview 
 
 | - | VOC | YOLO | COCO |
@@ -11,6 +13,8 @@
 | type | int | float | int |
 | classes | - | classes.txt | D['categories'] |
 | raw shape | height,width | - | D['images'] |
+
+#### preprocess.py: Clean yoloFloat data format and transfer to mAP format
 
 #### More concepts
 + IOU
