@@ -195,15 +195,21 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         stats['PQ_st'] = panoptic_res["Stuff"]
     return stats, coco_evaluator
 
-if True:
-    import cv2
+if False:
+    import cv2, time
     from zDataset import my_datasets
     from exps import visualization as vz
-    _, _, test_dataset = my_datasets()
+    _, _, test_dataset = my_datasets(trainValPath="data/labv2/train/clean2dr", testPath="data/labv2/test/clean2dr", test=True)
     classList = ["PlasticContainer", "Non-PlasticContainer", "PaperContainer", "Non-PaperContainer"] # "Foil"
-    save = "exps/labv2_messy3k_DETReg_fine_tune_full_coco"
-    os.makedirs(f"{save}/testBox", exist_ok=True)
-    os.makedirs(f"{save}/test", exist_ok=True)
+    save = "exps/imgNetDETReg_fine_tune_full_coco" # !!!
+    crossCategoryNMS = True
+    filterBorder = True
+    savetxt = True
+    savejpg = True
+    confThreshold = 0.3
+    os.makedirs(f"{save}/txt" if savetxt else ".", exist_ok=True)
+    os.makedirs(f"{save}/jpg" if savejpg else ".", exist_ok=True)
+    iterateAll = True
 
 @torch.no_grad()
 def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_dir):
@@ -217,10 +223,11 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
 
     for j,(samples, targets) in enumerate(data_loader): # util.misc.NestedTensor # samples.tensors (bz,3,h,w) +-0. # samples.mask (bz,h,w) bool # len(target)=bz dict
         samples = samples.to(device)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-        top_k = len(targets[0]['boxes']) if False else 300
+        #targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        #top_k = len(targets[0]['boxes'])
 
         outputs = model(samples) # dict with pred_logits:(bz,query,class+1)=(1,300,91) and pred_boxes:(bz,query,(cx,cy,h,w))=(1,300,4)
+        """
         indices = outputs['pred_logits'][0].softmax(-1)[..., 1].sort(descending=True)[1][:top_k]
         predictied_boxes = torch.stack([outputs['pred_boxes'][0][i] for i in indices]).unsqueeze(0)
         logits = torch.stack([outputs['pred_logits'][0][i] for i in indices]).unsqueeze(0)
@@ -250,50 +257,64 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
             ax[i].set_aspect('equal')
             ax[i].set_axis_off()
 
-        #plt.savefig(os.path.join(output_dir, f'img_{int(targets[0]["image_id"][0])}.jpg'))
-        
+        plt.savefig(os.path.join(output_dir, f'img_{int(targets[0]["image_id"][0])}.jpg'))"""
+
         if True:
             imgPath, annotPath = test_dataset.pathList[j], test_dataset.annotList[j]
-            topScores = outputs['pred_logits'][0].softmax(-1)
-            threshold = 0.39 # 0.65, 0.5 is good # 0 if collect txt else plot
-            keepIdx, conf, predCls = [], [], []
-            for i in range(len(topScores)):
-                maxConf, maxConfIdx = float(topScores[i,:-1].max()), int(topScores[i,:-1].argmax()) #
-                if maxConf >= threshold:
-                    keepIdx.append( i )
-                    conf.append( maxConf )
-                    predCls.append( maxConfIdx )
-            topScores = topScores[keepIdx]
-            predictied_boxes = torch.stack([outputs['pred_boxes'][0][i] for i in keepIdx]).unsqueeze(0) if keepIdx else []
+            bboxes      = outputs['pred_boxes'][0]                       # (300,(cx,cy,w,h)) float
+            classScores = outputs['pred_logits'][0].softmax(-1)          # (300,classes+1) float
             
-            predictied_boxes, conf, predCls = predictied_boxes.cpu().numpy()[0] if len(predictied_boxes) else np.array([]), np.array(conf), np.array(predCls)
-            adopt = vz.NMS(predictied_boxes, boxesType="yoloFloat", threshold=0.3)
-            topScores, predictied_boxes, conf, predCls = topScores[adopt], predictied_boxes[adopt], conf[adopt], predCls[adopt]
-            #print( imgPath.split('/')[-1] )
-            #print( "adopt:", adopt)
-            #print( "topScores:", topScores ) # (K,classes+1)
-            #print( "predictied_boxes:", predictied_boxes) # (K,4)
-            #print( "conf:", conf) # (K,)
-            #print( "predCls:", predCls) # (K,)
+            topConfIdx = classScores[:,:-1].max(axis=1).values.sort(descending=True).indices # get max conf of each query then get their ranking index # (300,) int
+            bboxes = bboxes[topConfIdx]                                  # (300,(cx,cy,w,h)) float
+            scores, classes = classScores[topConfIdx][:,:-1].max(axis=1) # (300,) float, (300,) int
+            removeNums = {}
             
-            #vz.show(imgPath, annotPath, "yoloFloat", predictied_boxes, predCls, conf, classList, save+"/testBox", (1.5,1.5))
-            with open(f"{save}/test/{annotPath.split('/')[-1]}", "w") as f:
-                height, width, _ = cv2.imread(imgPath).shape
-                for pcid, cf, (cx,cy,w,h) in zip(predCls,conf,predictied_boxes):
-                    xmin = int((float(cx)-float(w)/2)*width)
-                    ymin = int((float(cy)-float(h)/2)*height)
-                    xmax = int((float(cx)+float(w)/2)*width)
-                    ymax = int((float(cy)+float(h)/2)*height)
-                    f.write(f"{pcid} {cf} {xmin} {ymin} {xmax} {ymax}\n")
-            print(f"\r{j+1}/{len(data_loader)}", end="")
-            #if j>=20-1:
-            #    break
-            #print("-"*100)
+            if crossCategoryNMS:
+                adopt = vz.NMS(bboxes.cpu().numpy(), boxesType="yoloFloat", threshold=0.3)
+                removeNums["crossCategoryNMS"] = len(bboxes)-len(adopt)
+                bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
 
+            if filterBorder: # seems filter most of the trivial bboxes
+                adopt = []
+                for i,(cx,cy,w,h) in enumerate(bboxes):
+                    cx,cy,w,h = float(cx),float(cy),float(w),float(h)
+                    if cx-w/2>=0 and cx+w/2<=1 and cy-h/2>=0 and cy+h/2<=1:
+                        adopt.append(i)
+                removeNums["filterBorder"] = len(bboxes)-len(adopt)
+                bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
+            
+            if savetxt:
+                with open(f"{save}/txt/{annotPath.split('/')[-1]}", "w") as f:
+                    height, width, _ = cv2.imread(imgPath).shape
+                    for cid, score, (cx,cy,w,h) in zip(classes,scores,bboxes):
+                        score= round(float(score),4) 
+                        xmin = int((float(cx)-float(w)/2)*width)
+                        ymin = int((float(cy)-float(h)/2)*height)
+                        xmax = int((float(cx)+float(w)/2)*width)
+                        ymax = int((float(cy)+float(h)/2)*height)
+                        f.write(f"{cid} {score} {xmin} {ymin} {xmax} {ymax}\n")
+            
+            if savejpg:
+                if confThreshold:
+                    adopt = list(filter(lambda i:scores[i]>=confThreshold, range(len(bboxes))))
+                    removeNums["confidenceThreshold"] = len(bboxes)-len(adopt)
+                    bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
+                vz.show(imgPath, annotPath, "yoloFloat", bboxes, classes, scores, classList, f"{save}/jpg", (1.5,1.5))
+            
+            if iterateAll:
+                print(f"\r{j+1}/{len(data_loader)}", end="")
+            else:
+                print(imgPath.split('/')[-1])
+                print(f"removeNums={removeNums}")
+                print(f"bboxes={bboxes}")
+                print(f"scores={scores}")
+                print(f"classes={classes}")
+                print("-"*100)
+                if j>=20-1:
+                    break
 
 def get_ss_res(img, h, w, top_k):
     boxes = selective_search(img, h, w)[:top_k]
     boxes = torch.tensor(boxes).unsqueeze(0)
     boxes = box_xyxy_to_cxcywh(boxes)/torch.tensor([w, h, w, h])
     return boxes
-
