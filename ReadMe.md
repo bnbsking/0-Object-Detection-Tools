@@ -1,3 +1,6 @@
+#### DETRegNotes
++ Notes after implementing https://github.com/amirbar/detreg
+
 #### Convert.ipynb: Data format transformation and pseudo labeling tool
 
 #### Visualization.ipynb: Plot ground truth and prediction result among various format
