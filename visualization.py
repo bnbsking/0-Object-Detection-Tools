@@ -202,27 +202,3 @@ def NMS(bboxes, boxesType="yoloFloat", threshold=0.3): # bboxes: np.array
     if len(alive)==1:
         adopt.append(alive.pop())
     return adopt
-
-def NMS0(bboxes, cids, cfs, boxesType="yoloFloat", threshold=0.3):
-    bboxes, cids, cfs = np.array(bboxes), np.array(cids), np.array(cfs)
-    nmsBoxes, nmsCIDs, nmsCFs = [], [], []
-    while len(bboxes)>=2:
-        nmsBoxes.append( bboxes[0] )
-        nmsCIDs.append( cids[0] )
-        nmsCFs.append( cfs[0] )
-        boxA = getattr(boxAny2Voc,boxesType)(bboxes[0][0], bboxes[0][1], bboxes[0][2], bboxes[0][3], width=1000, height=1000)
-        bboxes, cids, cfs = bboxes[1:], cids[1:], cfs[1:]
-        keepI = []
-        for i,box in enumerate(bboxes):
-            boxB = getattr(boxAny2Voc,boxesType)(box[0], box[1], box[2], box[3], width=1000, height=1000)
-            iou  = IOU(boxA,boxB)
-            if iou<threshold:
-                keepI.append(i)
-        bboxes = bboxes[keepI]
-        cids = cids[keepI]
-        cfs = cfs[keepI]
-    if len(bboxes)==1:
-        nmsBoxes.append(bboxes[0])
-        nmsCIDs.append(cids[0])
-        nmsCFs.append(cfs[0])
-    return nmsBoxes, nmsCIDs, nmsCFs
