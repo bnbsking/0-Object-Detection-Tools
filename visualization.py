@@ -202,3 +202,48 @@ def NMS(bboxes, boxesType="yoloFloat", threshold=0.3): # bboxes: np.array
     if len(alive)==1:
         adopt.append(alive.pop())
     return adopt
+
+"""
++ Ground truth: yoloFloat, Voc, Coco
++ Prediction: yoloFloat, yoloInt, Voc, Coco
++ Testing order: (GT,PD)=[(YF,YF), (YF,YI), (YF,Voc), (YF,Coco), (Voc,YF), (Coco,YF)]
+
+boxesYoloFloat = [[0.3094, 0.7007, 0.1422, 0.2347], [0.8008, 0.4792, 0.2375, 0.2833], [0.8586, 0.8347, 0.1656, 0.2167],
+                  [0.0629, 0.2972, 0.1258, 0.2667], [0.2328, 0.5042, 0.1203, 0.1639], [0.1246, 0.1347, 0.2211, 0.1639],
+                  [0.7496, 0.8792, 0.1336, 0.2167], [0.5573, 0.1169, 0.1449, 0.2250], [0.4256, 0.3804, 0.2614, 0.2675],
+                  [0.4046, 0.8599, 0.1648, 0.2155], [0.2043, 0.6779, 0.0791, 0.3640], [0.1348, 0.5735, 0.0968, 0.1656]]
+boxesYoloInt = [[ 396,  504,  182,  168], [1025,  345,  304,  203], [1099,  600,  211,  156],
+                [  80,  213,  161,  192], [ 297,  363,  153,  118], [ 159,   96,  283,  118],
+                [ 959,  633,  171,  156], [ 713,   84,  185,  162], [ 544,  273,  334,  192],
+                [ 517,  619,  210,  155], [ 261,  488,  101,  262], [ 172,  412,  123,  119]]
+boxesVoc = [[305, 420, 487, 588], [873, 243, 1177, 446], [993, 522, 1204, 678],
+            [0, 117, 160, 309,], [220, 304, 373, 422], [17, 37, 300, 155],
+            [873, 555, 1044, 711], [620, 3, 805, 165], [377, 177, 711, 369],
+            [412, 541, 622, 696], [210, 357, 311, 619], [110, 352, 233, 471]]
+boxesCoco = [[305, 420, 182, 168], [873, 243, 304, 203], [993, 522, 211, 156],
+             [  0, 117, 160, 192], [220, 304, 153, 118], [ 17,  37, 283, 118],
+             [873, 555, 171, 156], [620,   3, 185, 162], [377, 177, 334, 192],
+             [412, 541, 210, 155], [210, 357, 101, 262], [110, 352, 123, 119]]
+cids = [1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1]
+cfs = [0.99 for i in range(12)]
+
+print("GT: yoloFloat, Pred:yoloFloat")
+show("./C0025_00505.jpg","./C0025_00505.txt","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+
+print("GT: yoloFloat, Pred:yoloInt")
+show("./C0025_00505.jpg","./C0025_00505.txt","yoloInt",boxesYoloInt,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+
+print("GT: yoloFloat, Pred:voc")
+show("./C0025_00505.jpg","./C0025_00505.txt","voc",boxesVoc,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+
+print("GT: yoloFloat, Pred:Coco")
+show("./C0025_00505.jpg","./C0025_00505.txt","coco",boxesCoco,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+
+print("-"*100+"\n")
+
+print("GT: voc, Pred:yoloFloat")
+show("./C0025_00505.jpg","./C0025_00505.xml","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+
+print("GT: coco, Pred:yoloFloat")
+show("./C0025_00505.jpg","./labels.json","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
+"""
