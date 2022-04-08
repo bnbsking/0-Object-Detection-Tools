@@ -1,5 +1,5 @@
 # originate from https://github.com/Cartucho/mAP
-# e.g. python main.py -na
+# e.g. python map.py -na
 import glob
 import json
 import os
