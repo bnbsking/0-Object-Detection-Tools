@@ -1,4 +1,3 @@
-# originate from https://github.com/kaanakan/object_detection_confusion_matrix
 # e.g. python confusion_matrix.py 4 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
 import numpy as np
 
@@ -101,11 +100,14 @@ class ConfusionMatrix:
 # e.g. python confusion_matrix.py 4 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
 import sys, glob
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
 _, classes, threshold, gtPath, dtPath = sys.argv
-classes, threshold, gtPathL, dtPathL = int(classes), float(threshold), sorted(glob.glob(f"{gtPath}/*.txt")), sorted(glob.glob(f"{dtPath}/*.txt"))
+classL, threshold, gtPathL, dtPathL = classes.split(","), float(threshold), sorted(glob.glob(f"{gtPath}/*.txt")), sorted(glob.glob(f"{dtPath}/*.txt"))
+n = len(classL)
 assert len(gtPathL)==len(dtPathL)
 
-M = np.zeros( (classes+1,classes+1) ) # col:gt, row:pd
+M = np.zeros( (n+1,n+1) ) # col:gt, row:pd
 for i,(gtPath,dtPath) in enumerate(zip(gtPathL,dtPathL)):
     with open(gtPath,"r") as f:
         labels = []
@@ -119,7 +121,7 @@ for i,(gtPath,dtPath) in enumerate(zip(gtPathL,dtPathL)):
             cid, conf, xmin, ymin, xmax, ymax = line.replace("\n","").split(" ")
             detections.append( [int(xmin), int(ymin), int(xmax), int(ymax), float(conf), int(cid)] )
         detections = np.array(detections)
-    cm = ConfusionMatrix(classes, CONF_THRESHOLD=threshold, IOU_THRESHOLD=0.5)
+    cm = ConfusionMatrix(n, CONF_THRESHOLD=threshold, IOU_THRESHOLD=0.5)
     cm.process_batch(detections,labels)
     M += cm.return_matrix()
     #if cm.return_matrix()[:,4].sum()>0: # unknown error, last column should be zero
@@ -127,15 +129,31 @@ for i,(gtPath,dtPath) in enumerate(zip(gtPathL,dtPathL)):
     #    print(cm.return_matrix())
     #if i>10:
     #    break
-M = M/M.sum(axis=0)
-M[:,-1]=0
+N = M / M.sum(axis=0)
 
-plt.title(f"Confusion Matrix", fontsize=16)
-plt.xlabel("GT", fontsize=16)
-plt.ylabel("PD", fontsize=16)
-plt.imshow(M, cmap='hot', interpolation='nearest')
-for i in range(classes+1):
-    for j in range(classes+1):
-        plt.text(j, i, round(M[i][j],2), ha="center", va="center", color="green", fontsize=16)
-plt.colorbar()
+plt.figure(figsize=(10,5))
+#
+fig = plt.subplot(1,2,1)
+plt.title(f"Confusion Matrix - Number", fontsize=12)
+plt.xlabel("GT", fontsize=12)
+plt.ylabel("PD", fontsize=12)
+fig.set_xticks(np.arange(n+1), classL+['BG'])
+fig.set_yticks(np.arange(n+1), classL+['BG'])
+plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
+for i in range(n+1):
+    for j in range(n+1):
+        plt.text(j, i, int(M[i][j]), ha="center", va="center", color="black" if N[i][j]<0.9 else "white", fontsize=12)
+#
+fig = plt.subplot(1,2,2)
+plt.title(f"Confusion Matrix - Ratio", fontsize=12)
+plt.xlabel("GT", fontsize=12)
+plt.ylabel("PD", fontsize=12)
+fig.set_xticks(np.arange(n+1), classL+['BG'])
+fig.set_yticks(np.arange(n+1), classL+['BG'])
+plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
+for i in range(n+1):
+    for j in range(n+1):
+        plt.text(j, i, round(N[i][j],2), ha="center", va="center", color="black" if N[i][j]<0.9 else "white", fontsize=12)
+plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.cm.Blues))
+#
 plt.savefig("result.jpg")
