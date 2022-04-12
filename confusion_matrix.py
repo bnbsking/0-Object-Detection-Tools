@@ -1,4 +1,4 @@
-# e.g. python confusion_matrix.py 4 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
+# e.g. python confusion_matrix.py NPlC,PlC,NPa,Pa 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
 import numpy as np
 
 
