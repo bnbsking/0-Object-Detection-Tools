@@ -97,7 +97,6 @@ class ConfusionMatrix:
         for i in range(self.num_classes + 1):
             print(' '.join(map(str, self.matrix[i])))
 
-# e.g. python confusion_matrix.py 4 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
 import sys, glob
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -124,11 +123,6 @@ for i,(gtPath,dtPath) in enumerate(zip(gtPathL,dtPathL)):
     cm = ConfusionMatrix(n, CONF_THRESHOLD=threshold, IOU_THRESHOLD=0.5)
     cm.process_batch(detections,labels)
     M += cm.return_matrix()
-    #if cm.return_matrix()[:,4].sum()>0: # unknown error, last column should be zero
-    #    print(gtPath,dtPath)
-    #    print(cm.return_matrix())
-    #if i>10:
-    #    break
 N = M / M.sum(axis=0)
 
 plt.figure(figsize=(10,5))
