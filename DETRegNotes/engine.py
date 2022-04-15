@@ -97,7 +97,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     header = 'Test:'
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())
-    coco_evaluator = None #(CocoEvaluator if 'COCO' in type(base_ds).__name__ else VocEvaluator)(base_ds, iou_types)
+    coco_evaluator = (CocoEvaluator if 'COCO' in type(base_ds).__name__ else VocEvaluator)(base_ds, iou_types)
     # coco_evaluator.coco_eval[iou_types[0]].params.iouThrs = [0, 0.1, 0.5, 0.75]
 
     panoptic_evaluator = None
@@ -195,21 +195,12 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         stats['PQ_st'] = panoptic_res["Stuff"]
     return stats, coco_evaluator
 
-if False:
-    import cv2, time
-    from zDataset import my_datasets
-    from exps import visualization as vz
-    _, _, test_dataset = my_datasets(trainValPath="data/labv2/train/clean2dr", testPath="data/labv2/test/clean2dr", test=True)
-    classList = ["PlasticContainer", "Non-PlasticContainer", "PaperContainer", "Non-PaperContainer"] # "Foil"
-    save = "exps/imgNetDETReg_fine_tune_full_coco" # !!!
-    crossCategoryNMS = True
-    filterBorder = True
-    savetxt = True
-    savejpg = True
-    confThreshold = 0.3
-    os.makedirs(f"{save}/txt" if savetxt else ".", exist_ok=True)
-    os.makedirs(f"{save}/jpg" if savejpg else ".", exist_ok=True)
-    iterateAll = True
+if True:
+    import random
+    from zCode import detregDownstreamInference as ddi
+    R = list(range(3000))
+    random.shuffle(R)
+    S10 = set(R[:10])
 
 @torch.no_grad()
 def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_dir):
@@ -221,13 +212,21 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('class_error', utils.SmoothedValue(window_size=1, fmt='{value:.2f}'))
 
-    for j,(samples, targets) in enumerate(data_loader): # util.misc.NestedTensor # samples.tensors (bz,3,h,w) +-0. # samples.mask (bz,h,w) bool # len(target)=bz dict
+    for i,(samples, targets) in enumerate(data_loader):
+        if True:
+            print(f"\r{i+1}/{len(data_loader)}",end='')
+            if False and i not in S10:
+                continue
+        
         samples = samples.to(device)
-        #targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-        #top_k = len(targets[0]['boxes'])
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        top_k = len(targets[0]['boxes'])
 
-        outputs = model(samples) # dict with pred_logits:(bz,query,class+1)=(1,300,91) and pred_boxes:(bz,query,(cx,cy,h,w))=(1,300,4)
-        """
+        outputs = model(samples)
+        if True:
+            go = ddi.main(outputs, int(targets[0]['image_id']), output_dir)
+            continue
+
         indices = outputs['pred_logits'][0].softmax(-1)[..., 1].sort(descending=True)[1][:top_k]
         predictied_boxes = torch.stack([outputs['pred_boxes'][0][i] for i in indices]).unsqueeze(0)
         logits = torch.stack([outputs['pred_logits'][0][i] for i in indices]).unsqueeze(0)
@@ -257,64 +256,12 @@ def viz(model, criterion, postprocessors, data_loader, base_ds, device, output_d
             ax[i].set_aspect('equal')
             ax[i].set_axis_off()
 
-        plt.savefig(os.path.join(output_dir, f'img_{int(targets[0]["image_id"][0])}.jpg'))"""
+        plt.savefig(os.path.join(output_dir, f'img_{int(targets[0]["image_id"][0])}.jpg'))
 
-        if True:
-            imgPath, annotPath = test_dataset.pathList[j], test_dataset.annotList[j]
-            bboxes      = outputs['pred_boxes'][0]                       # (300,(cx,cy,w,h)) float
-            classScores = outputs['pred_logits'][0].softmax(-1)          # (300,classes+1) float
-            
-            topConfIdx = classScores[:,:-1].max(axis=1).values.sort(descending=True).indices # get max conf of each query then get their ranking index # (300,) int
-            bboxes = bboxes[topConfIdx]                                  # (300,(cx,cy,w,h)) float
-            scores, classes = classScores[topConfIdx][:,:-1].max(axis=1) # (300,) float, (300,) int
-            removeNums = {}
-            
-            if crossCategoryNMS:
-                adopt = vz.NMS(bboxes.cpu().numpy(), boxesType="yoloFloat", threshold=0.3)
-                removeNums["crossCategoryNMS"] = len(bboxes)-len(adopt)
-                bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
-
-            if filterBorder: # seems filter most of the trivial bboxes
-                adopt = []
-                for i,(cx,cy,w,h) in enumerate(bboxes):
-                    cx,cy,w,h = float(cx),float(cy),float(w),float(h)
-                    if cx-w/2>=0 and cx+w/2<=1 and cy-h/2>=0 and cy+h/2<=1:
-                        adopt.append(i)
-                removeNums["filterBorder"] = len(bboxes)-len(adopt)
-                bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
-            
-            if savetxt:
-                with open(f"{save}/txt/{annotPath.split('/')[-1]}", "w") as f:
-                    height, width, _ = cv2.imread(imgPath).shape
-                    for cid, score, (cx,cy,w,h) in zip(classes,scores,bboxes):
-                        score= round(float(score),4) 
-                        xmin = int((float(cx)-float(w)/2)*width)
-                        ymin = int((float(cy)-float(h)/2)*height)
-                        xmax = int((float(cx)+float(w)/2)*width)
-                        ymax = int((float(cy)+float(h)/2)*height)
-                        f.write(f"{cid} {score} {xmin} {ymin} {xmax} {ymax}\n")
-            
-            if savejpg:
-                if confThreshold:
-                    adopt = list(filter(lambda i:scores[i]>=confThreshold, range(len(bboxes))))
-                    removeNums["confidenceThreshold"] = len(bboxes)-len(adopt)
-                    bboxes, scores, classes = bboxes[adopt], scores[adopt], classes[adopt]
-                vz.show(imgPath, annotPath, "yoloFloat", bboxes, classes, scores, classList, f"{save}/jpg", (1.5,1.5))
-            
-            if iterateAll:
-                print(f"\r{j+1}/{len(data_loader)}", end="")
-            else:
-                print(imgPath.split('/')[-1])
-                print(f"removeNums={removeNums}")
-                print(f"bboxes={bboxes}")
-                print(f"scores={scores}")
-                print(f"classes={classes}")
-                print("-"*100)
-                if j>=20-1:
-                    break
 
 def get_ss_res(img, h, w, top_k):
     boxes = selective_search(img, h, w)[:top_k]
     boxes = torch.tensor(boxes).unsqueeze(0)
     boxes = box_xyxy_to_cxcywh(boxes)/torch.tensor([w, h, w, h])
     return boxes
+
