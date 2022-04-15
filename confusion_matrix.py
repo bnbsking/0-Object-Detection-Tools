@@ -13,7 +13,6 @@ def box_iou_calc(boxes1, boxes2):
     Returns:
         iou (Array[N, M]): the NxM matrix containing the pairwise
             IoU values for every element in boxes1 and boxes2
-
     This implementation is taken from the above link and changed so that it only uses numpy..
     """
 
@@ -131,8 +130,10 @@ fig = plt.subplot(1,2,1)
 plt.title(f"Confusion Matrix - Number", fontsize=12)
 plt.xlabel("GT", fontsize=12)
 plt.ylabel("PD", fontsize=12)
-fig.set_xticks(np.arange(n+1), classL+['BG'])
-fig.set_yticks(np.arange(n+1), classL+['BG'])
+fig.set_xticks(np.arange(n+1)) # values
+fig.set_xticklabels(classL+['BG']) # labels
+fig.set_yticks(np.arange(n+1)) # values
+fig.set_yticklabels(classL+['BG']) # labels
 plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
 for i in range(n+1):
     for j in range(n+1):
@@ -142,12 +143,14 @@ fig = plt.subplot(1,2,2)
 plt.title(f"Confusion Matrix - Ratio", fontsize=12)
 plt.xlabel("GT", fontsize=12)
 plt.ylabel("PD", fontsize=12)
-fig.set_xticks(np.arange(n+1), classL+['BG'])
-fig.set_yticks(np.arange(n+1), classL+['BG'])
+fig.set_xticks(np.arange(n+1)) # values
+fig.set_xticklabels(classL+['BG']) # labels
+fig.set_yticks(np.arange(n+1)) # values
+fig.set_yticklabels(classL+['BG']) # labels
 plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
 for i in range(n+1):
     for j in range(n+1):
         plt.text(j, i, round(N[i][j],2), ha="center", va="center", color="black" if N[i][j]<0.9 else "white", fontsize=12)
-plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.cm.Blues))
+#plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.cm.Blues))
 #
 plt.savefig("result.jpg")

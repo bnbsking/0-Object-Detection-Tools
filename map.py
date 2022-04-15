@@ -1,5 +1,4 @@
-# originate from https://github.com/Cartucho/mAP
-# e.g. python map.py -na
+# https://github.com/Cartucho/mAP/blob/master/main.py # python map.py -na -dp ../exps/DETReg_fine_tune_full_coco/txt
 import glob
 import json
 import os
@@ -21,6 +20,7 @@ parser.add_argument('-q', '--quiet', help="minimalistic console output.", action
 parser.add_argument('-i', '--ignore', nargs='+', type=str, help="ignore a list of classes.")
 # argparse receiving list of classes with specific IoU (e.g., python main.py --set-class-iou person 0.7)
 parser.add_argument('--set-class-iou', nargs='+', type=str, help="set IoU for a specific class.")
+parser.add_argument('-dp', '--detection-path', help="set IoU for a specific class.")
 args = parser.parse_args()
 
 '''
@@ -51,15 +51,10 @@ DR_PATH = os.path.join(os.getcwd(), 'input', 'detection-results')
 # if there are no images then no animation can be shown
 IMG_PATH = os.path.join(os.getcwd(), 'input', 'images-optional')
 if True:
-    if 1:
-        GT_PATH  = "/home/jovyan/data-vol-1/detreg/data/labv2/testv2/yoloIntAnt"
-        DR_PATH  = "/home/jovyan/data-vol-1/detreg/exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt"
-        IMG_PATH = "/home/jovyan/data-vol-1/detreg/data/labv2/testv2/yoloIntImg"
-    else:
-        GT_PATH = "temp/gtant"
-        DR_PATH = "temp/dtant"
-        IMG_PATH= "temp/gtimg"
-
+    GT_PATH  = "../data/labv2/test_map_ant"
+    DR_PATH  = args.detection_path
+    IMG_PATH = "../data/labv2/test_map_img"
+    
 if os.path.exists(IMG_PATH): 
     for dirpath, dirnames, files in os.walk(IMG_PATH):
         if not files:
@@ -94,12 +89,10 @@ def log_average_miss_rate(prec, rec, num_images):
         log-average miss rate:
             Calculated by averaging miss rates at 9 evenly spaced FPPI points
             between 10e-2 and 10e0, in log-space.
-
         output:
                 lamr | log-average miss rate
                 mr | miss rate
                 fppi | false positives per image
-
         references:
             [1] Dollar, Piotr, et al. "Pedestrian Detection: An Evaluation of the
                State of the Art." Pattern Analysis and Machine Intelligence, IEEE
@@ -426,7 +419,7 @@ for txt_file in ground_truth_files_list:
                     # if class didn't exist yet
                     counter_images_per_class[class_name] = 1
                 already_seen_classes.append(class_name)
-    
+
 
     # dump bounding_boxes into a ".json" file
     new_temp_file = TEMP_FILES_PATH + "/" + file_id + "_ground_truth.json"
@@ -434,7 +427,6 @@ for txt_file in ground_truth_files_list:
     with open(new_temp_file, 'w') as outfile:
         json.dump(bounding_boxes, outfile)
 
-#print(gt_counter_per_class); raise
 gt_classes = list(gt_counter_per_class.keys())
 # let's sort the classes alphabetically
 gt_classes = sorted(gt_classes)
@@ -461,7 +453,7 @@ if specific_iou_flagged:
         error('Error, missing arguments. Flag usage:' + error_msg)
     for tmp_class in specific_iou_classes:
         if tmp_class not in gt_classes:
-            error('Error, unknown class \"' + tmp_class + '\". Flag usage:' + error_msg)
+                    error('Error, unknown class \"' + tmp_class + '\". Flag usage:' + error_msg)
     for num in iou_list:
         if not is_float_between_0_and_1(num):
             error('Error, IoU must be between 0.0 and 1.0. Flag usage:' + error_msg)
@@ -665,6 +657,8 @@ with open(output_files_path + "/output.txt", 'w') as output_file:
                 # save the image with all the objects drawn to it
                 cv2.imwrite(img_cumulative_path, img_cumulative)
 
+        #print(tp)
+        # compute precision/recall
         cumsum = 0
         for idx, val in enumerate(fp):
             fp[idx] += cumsum
@@ -739,7 +733,6 @@ with open(output_files_path + "/output.txt", 'w') as output_file:
     text = "mAP = {0:.2f}%".format(mAP*100)
     output_file.write(text + "\n")
     print(text)
-#json.dump(myD,open("myD.json","w"))
 
 """
  Draw false negatives
@@ -765,7 +758,7 @@ if show_animation:
         cv2.imwrite(img_cumulative_path, img)
 
 # remove the temp_files directory
-#shutil.rmtree(TEMP_FILES_PATH)
+# shutil.rmtree(TEMP_FILES_PATH)
 
 """
  Count total of detection-results
