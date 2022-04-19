@@ -11,6 +11,8 @@ Pretrain: python -u main.py --output_dir exps/DETReg_top30_in --dataset imagenet
 
 Finetune: python -u main.py --output_dir exps/DETReg_fine_tune_full_coco --dataset coco --pretrain exps/DETReg_top30_in/checkpoint.pth --batch_size 4 --num_workers 1 --epochs 60
 
+Evaluation: python -u main.py --output_dir exps/xavier_imagenet_labv2c5/ --dataset coco --pretrain exps/xavier_imagenet_labv2c5/checkpoint0037.pth --batch_size 1 --num_workers 1 --resume exps/xavier_imagenet_labv2c5/checkpoint0037.pth --eval
+
 Visualization: python -u main.py --output_dir exps/DETReg_fine_tune_full_coco --dataset coco --pretrain exps/DETReg_fine_tune_full_coco/checkpoint.pth --batch_size 1 --num_workers 1
 """
 
