@@ -52,102 +52,145 @@ def getPatch(a,b,color=(1,1,1)):
     return A # 30,60
 
 if True:
-    color = [ (1,0,0), (0,1,0), (0,0,1), (1,1,0), (0,1,1) ]
+    colors = [ (1,0,0), (0,1,0), (0,0,1), (1,1,0), (0,1,1) ] # 
 else:
-    color = set()
-    while len(color)<90:
-        color.add( tuple([round(random.random(),2) for i in range(3)]) )
-    color = list(color)
-    
-class boxAny2Voc:
+    colors = set()
+    while len(colors)<90:
+        colors.add( tuple([round(random.random(),2) for i in range(3)]) )
+    colors = list(colors)
+
+
+class BoxAny2Voc:
     def voc(xmin,ymin,xmax,ymax,width=None,height=None):
         return int(xmin),int(ymin), int(xmax), int(ymax)
-    def yoloFloat(cx,cy,w,h,width=None,height=None): # width, height only valid
+    
+    def yolo(cx,cy,w,h,width=None,height=None): # width, height only valid
         xmin = int((float(cx)-float(w)/2)*float(width))
         ymin = int((float(cy)-float(h)/2)*float(height))
         xmax = int((float(cx)+float(w)/2)*float(width))
         ymax = int((float(cy)+float(h)/2)*float(height))
         return xmin, ymin, xmax, ymax
-    def yoloInt(cx,cy,w,h,width=None,height=None):
+    
+    def yolo_int(cx,cy,w,h,width=None,height=None):
         xmin = int(int(cx)-int(w)/2)
         ymin = int(int(cy)-int(h)/2)
         xmax = int(int(cx)+int(w)/2)
         ymax = int(int(cy)+int(h)/2)
         return xmin, ymin, xmax, ymax
+    
     def coco(xmin,ymin,w,h,width=None,height=None):
         return int(xmin), int(ymin), int(xmin)+int(w), int(ymin)+int(h)
     
-def getAnnot(imgPath, annotPath, classList):
-    if ".xml" in annotPath: # Pascal VOC
-        xml = open(annotPath,"r").read()
-        nameL = re.findall("<name>(.*)</name>",xml)
-        xminL = re.findall("<xmin>(.*)</xmin>",xml)
-        yminL = re.findall("<ymin>(.*)</ymin>",xml)
-        xmaxL = re.findall("<xmax>(.*)</xmax>",xml)
-        ymaxL = re.findall("<ymax>(.*)</ymax>",xml)
-        boxes, cids = [], []        
-        for name,xmin,ymin,xmax,ymax in zip(nameL,xminL,yminL,xmaxL,ymaxL):
-            cids.append( classList.index(name) )
-            xmin, ymin, xmax, ymax = boxAny2Voc.voc(xmin,ymin,xmax,ymax)
+
+class CocoCache:
+    """
+    Non-self class, attributes are shared everywhere
+    This Cache cannot be refreshed
+    """
+    D, cache = {}, False
+    def load(path):
+        if not CocoCache.cache or not CocoCache.D:
+            print("fill cache")
+            CocoCache.D = json.load(open(path, 'r'))
+        return CocoCache.D
+
+
+def get_annotation(img_path, ant_path, class_list):
+    """
+    return boxes (N,4), cids (N,) 
+    """
+    # Pascal VOC
+    if ".xml" in ant_path: 
+        xml = open(ant_path,"r").read()
+        name_list = re.findall("<name>(.*)</name>", xml)
+        xmin_list = re.findall("<xmin>(.*)</xmin>", xml)
+        ymin_list = re.findall("<ymin>(.*)</ymin>", xml)
+        xmax_list = re.findall("<xmax>(.*)</xmax>", xml)
+        ymax_list = re.findall("<ymax>(.*)</ymax>", xml)
+        boxes, cids = [], []
+        for name, xmin, ymin, xmax, ymax in zip(name_list, xmin_list, ymin_list, xmax_list, ymax_list):
+            cids.append( class_list.index(name) )
+            xmin, ymin, xmax, ymax = BoxAny2Voc.voc(xmin, ymin, xmax, ymax)
             boxes.append( [xmin, ymin, xmax, ymax] )
         return boxes, cids
-    elif ".txt" in annotPath: # YOLO
-        height, width, _ = cv2.imread(imgPath).shape
+
+    # YOLO
+    elif ".txt" in ant_path:
+        height, width, _ = cv2.imread(img_path).shape
         boxes, cids = [], []
-        for line in open(annotPath,"r").readlines():
+        for line in open(ant_path,"r").readlines():
             cid, cx, cy, w, h = line.split(" ")
             cids.append( int(cid) )
             if "." in cx:
-                xmin, ymin, xmax, ymax = boxAny2Voc.yoloFloat(cx, cy, w, h, width, height)
+                xmin, ymin, xmax, ymax = BoxAny2Voc.yolo(cx, cy, w, h, width, height)
             else:
-                xmin, ymin, xmax, ymax = boxAny2Voc.yoloInt(cx, cy, w, h)
+                xmin, ymin, xmax, ymax = BoxAny2Voc.yolo_int(cx, cy, w, h)
             boxes.append( [xmin, ymin, xmax, ymax] )
         return boxes, cids
-    elif ".json" in annotPath: # COCO
-        D = json.load( open(annotPath,"r") )
-        imgName   = imgPath.split('/')[-1]
-        imgDict   = list(filter(lambda d:d["file_name"]==imgName,D["images"]))[0]
-        id        = imgDict["id"]
-        annotDict = list(filter(lambda d:d["image_id"]==id,D["annotations"]))
+    
+    # COCO
+    elif ".json" in ant_path:
+        D = CocoCache.load(ant_path)
+        img_name = img_path.split('/')[-1]
+        id = next( (dic['id'] for dic in D['images'] if dic['file_name']==img_name) )
+        ant_dict_list = [ dic for dic in D['annotations'] if dic['image_id']==id ]
         boxes, cids = [], []
-        for d in annotDict:
-            cid = d['category_id']-1
+        for dic in ant_dict_list:
+            cid = dic['category_id']-0 #-1 # cid start from 0 or 1
             cids.append( cid )
-            xmin, ymin, w, h = d['bbox']
-            xmin, ymin, xmax, ymax = boxAny2Voc.coco(xmin, ymin, w, h) 
+            xmin, ymin, w, h = dic['bbox']
+            xmin, ymin, xmax, ymax = BoxAny2Voc.coco(xmin, ymin, w, h) 
             boxes.append( [xmin, ymin ,xmax, ymax] )
         return boxes, cids
+    
     else:
-        raise ValueError("Annotation not found")
+        raise ValueError("Unkown extension of annotation file")
 
-def show(imgPath, annotPath, boxesTypePD, boxesPD, cidsPD, cfsPD, classList, savePath, valueRatios=(1,1)):
-    imgRaw = cv2.imread(imgPath)[:,:,::-1]/255
+def show(class_list, img_path, ant_path="", pd_boxes_type="", pd_boxes=None, pd_cids=None, pd_cfs=None, \
+    save_path="", box_width=4, valueRatios=(1,1)): # use help(show) for more details
+    """
+    class_list: list[str]. class names
+    img_path: str. path to the image
+    ant_path: str. path to the annotation
+        if this is None, show black only
+    pd_boxes_type: str. '' or 'voc' or 'yolo' or 'yolo_int' or 'coco'
+        if this is None, show black only and pd_boxes, pd_cids, pd_cfs are not used
+    pd_boxes: None or ndarray in shape (N,4)
+    pd_cids:  None or ndarray in shape (N,). class index
+    pd_cfs:   None or ndarray in shape (N,). confidence
+    save_folder: str. save at the folder with same filename. if this is None, just show
+    box_width: int. predicted box width while plotting
+    """
+    
+    img_raw = cv2.imread(img_path)[:,:,::-1]/255
 
-    if not annotPath:
-        imgGT = np.zeros((imgRaw.shape[0],imgRaw.shape[1],3))
+    # generate img_gt
+    if not ant_path:
+        img_gt = np.zeros((img_raw.shape[0], img_raw.shape[1], 3))
     else:
-        imgGT = imgRaw.copy()
-        boxesGT, cidsGT = getAnnot(imgPath,annotPath,classList) # boxesType, boxes, cids
-        for (xmin,ymin,xmax,ymax),cid in zip(boxesGT,cidsGT):
-            imgGT[ymin-4:ymin+4,xmin:xmax,:] = color[cid]
-            imgGT[ymax-4:ymax+4,xmin:xmax,:] = color[cid]
-            imgGT[ymin:ymax,xmin-4:xmin+4,:] = color[cid]
-            imgGT[ymin:ymax,xmax-4:xmax+4,:] = color[cid]
-        
-    if not boxesTypePD:
-        imgPD = np.zeros((imgRaw.shape[0],imgRaw.shape[1],3))
+        img_gt = img_raw.copy()
+        boxes_gt, cids_gt = get_annotation(img_path, ant_path, class_list)
+        for (xmin, ymin, xmax, ymax), cid in zip(boxes_gt, cids_gt):
+            img_gt[ymin-box_width:ymin+box_width, xmin:xmax, :] = colors[cid]
+            img_gt[ymax-box_width:ymax+box_width, xmin:xmax, :] = colors[cid]
+            img_gt[ymin:ymax, xmin-box_width:xmin+box_width, :] = colors[cid]
+            img_gt[ymin:ymax, xmax-box_width:xmax+box_width, :] = colors[cid]
+    
+    # generate img_pd
+    if not pd_boxes_type:
+        img_pd = np.zeros((img_raw.shape[0], img_raw.shape[1], 3))
     else:
-        imgPD = imgRaw.copy()
-        height, width, _ = imgPD.shape
-        for i,(b1,b2,b3,b4) in reversed(list(enumerate(boxesPD))):
-            xmin, ymin, xmax, ymax = getattr(boxAny2Voc,boxesTypePD)(b1,b2,b3,b4,width,height)
-            imgPD[ymin-4:ymin+4,xmin:xmax,:] = color[cidsPD[i]]
-            imgPD[ymax-4:ymax+4,xmin:xmax,:] = color[cidsPD[i]]
-            imgPD[ymin:ymax,xmin-4:xmin+4,:] = color[cidsPD[i]]
-            imgPD[ymin:ymax,xmax-4:xmax+4,:] = color[cidsPD[i]]
-            # percentage patches
+        img_pd = img_raw.copy()
+        height, width, _ = img_pd.shape
+        for i, (b1, b2, b3, b4) in reversed(list(enumerate(pd_boxes))): # plot least conf first
+            xmin, ymin, xmax, ymax = getattr(BoxAny2Voc, pd_boxes_type)(b1, b2, b3, b4, width, height)
+            img_pd[ymin-box_width:ymin+box_width, xmin:xmax, :] = colors[pd_cids[i]]
+            img_pd[ymax-box_width:ymax+box_width, xmin:xmax, :] = colors[pd_cids[i]]
+            img_pd[ymin:ymax, xmin-box_width:xmin+box_width, :] = colors[pd_cids[i]]
+            img_pd[ymin:ymax, xmax-box_width:xmax+box_width, :] = colors[pd_cids[i]]
+            # confidence patches
             ud, td = int(cfsPD[i]*10), int(cfsPD[i]*100)%10
-            P = getPatch(ud,td,color=color[cidsPD[i]])
+            P = getPatch(ud,td,color=colors[cidsPD[i]])
             (ph, pw, _), (rh,rw) = P.shape, valueRatios
             P = cv2.resize( P, (int(pw*rw),int(ph*rh)) )
             try:
@@ -158,92 +201,24 @@ def show(imgPath, annotPath, boxesTypePD, boxesPD, cidsPD, cfsPD, classList, sav
             except:
                 pass
 
+    # plot
     fig = plt.figure(figsize=(20,10))
     fig.set_facecolor("white")
 
     plt.subplot(1,2,1)
     plt.title("GT", fontsize=24)
     plt.tick_params(axis='both', which='major', labelsize=16)
-    for r,g,b in color:
-        c2hex = lambda c: ("0" if c<=1/16 else '') + hex(int(c*255))[2:]
-        plt.scatter([0],[0],c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
-    plt.legend(labels=classList, fontsize=16)
-    plt.imshow(imgGT)
+    for r, g, b in colors:
+        c2hex = lambda c: hex(int(c*255))[2:].zfill(2)
+        plt.scatter([0], [0], c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
+
+    plt.legend(labels=class_list, fontsize=16)
+    plt.imshow(img_gt)
     
     plt.subplot(1,2,2)
     plt.title("Pred", fontsize=24)
     plt.tick_params(axis='both', which='major', labelsize=16)
-    for r,g,b in color:
-        c2hex = lambda c: ("0" if c<=1/16 else '') + hex(int(c*255))[2:]
-        plt.scatter([0],[0],c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
-    plt.imshow(imgPD)
-    plt.savefig( f"{savePath}/{imgPath.split('/')[-1]}" )
+    plt.imshow(img_pd)
+    
+    plt.savefig( f"{save_path}/{img_path.split('/')[-1]}" ) if save_path else plt.show()
     plt.close()
-                
-def IOU(boxA, boxB): # VOC
-    (xminA, yminA, xmaxA, ymaxA), (xminB, yminB, xmaxB, ymaxB) = boxA, boxB
-    inter = max(0,min(ymaxA,ymaxB)-max(yminA,yminB)) * max(0,min(xmaxA,xmaxB)-max(xminA,xminB))
-    areaA = (ymaxA-yminA) * (xmaxA-xminA)
-    areaB = (ymaxB-yminB) * (xmaxB-xminB)
-    return inter / (areaA+areaB-inter)
-
-def NMS(bboxes, boxesType="yoloFloat", threshold=0.3): # bboxes: np.array
-    alive, adopt = set(range(len(bboxes))), []
-    while len(alive)>=2:
-        ma = min(alive)
-        adopt.append( ma )
-        boxA = getattr(boxAny2Voc,boxesType)(bboxes[ma][0], bboxes[ma][1], bboxes[ma][2], bboxes[ma][3], width=1000, height=1000)
-        alive.remove( ma )
-        for idx in alive.copy():
-            boxB = getattr(boxAny2Voc,boxesType)(bboxes[idx][0], bboxes[idx][1], bboxes[idx][2], bboxes[idx][3], width=1000, height=1000)
-            iou  = IOU(boxA,boxB)
-            if iou>=threshold:
-                alive.remove(idx)
-    if len(alive)==1:
-        adopt.append(alive.pop())
-    return adopt
-
-"""
-+ Ground truth: yoloFloat, Voc, Coco
-+ Prediction: yoloFloat, yoloInt, Voc, Coco
-+ Testing order: (GT,PD)=[(YF,YF), (YF,YI), (YF,Voc), (YF,Coco), (Voc,YF), (Coco,YF)]
-
-boxesYoloFloat = [[0.3094, 0.7007, 0.1422, 0.2347], [0.8008, 0.4792, 0.2375, 0.2833], [0.8586, 0.8347, 0.1656, 0.2167],
-                  [0.0629, 0.2972, 0.1258, 0.2667], [0.2328, 0.5042, 0.1203, 0.1639], [0.1246, 0.1347, 0.2211, 0.1639],
-                  [0.7496, 0.8792, 0.1336, 0.2167], [0.5573, 0.1169, 0.1449, 0.2250], [0.4256, 0.3804, 0.2614, 0.2675],
-                  [0.4046, 0.8599, 0.1648, 0.2155], [0.2043, 0.6779, 0.0791, 0.3640], [0.1348, 0.5735, 0.0968, 0.1656]]
-boxesYoloInt = [[ 396,  504,  182,  168], [1025,  345,  304,  203], [1099,  600,  211,  156],
-                [  80,  213,  161,  192], [ 297,  363,  153,  118], [ 159,   96,  283,  118],
-                [ 959,  633,  171,  156], [ 713,   84,  185,  162], [ 544,  273,  334,  192],
-                [ 517,  619,  210,  155], [ 261,  488,  101,  262], [ 172,  412,  123,  119]]
-boxesVoc = [[305, 420, 487, 588], [873, 243, 1177, 446], [993, 522, 1204, 678],
-            [0, 117, 160, 309,], [220, 304, 373, 422], [17, 37, 300, 155],
-            [873, 555, 1044, 711], [620, 3, 805, 165], [377, 177, 711, 369],
-            [412, 541, 622, 696], [210, 357, 311, 619], [110, 352, 233, 471]]
-boxesCoco = [[305, 420, 182, 168], [873, 243, 304, 203], [993, 522, 211, 156],
-             [  0, 117, 160, 192], [220, 304, 153, 118], [ 17,  37, 283, 118],
-             [873, 555, 171, 156], [620,   3, 185, 162], [377, 177, 334, 192],
-             [412, 541, 210, 155], [210, 357, 101, 262], [110, 352, 123, 119]]
-cids = [1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1]
-cfs = [0.99 for i in range(12)]
-
-print("GT: yoloFloat, Pred:yoloFloat")
-show("./C0025_00505.jpg","./C0025_00505.txt","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-
-print("GT: yoloFloat, Pred:yoloInt")
-show("./C0025_00505.jpg","./C0025_00505.txt","yoloInt",boxesYoloInt,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-
-print("GT: yoloFloat, Pred:voc")
-show("./C0025_00505.jpg","./C0025_00505.txt","voc",boxesVoc,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-
-print("GT: yoloFloat, Pred:Coco")
-show("./C0025_00505.jpg","./C0025_00505.txt","coco",boxesCoco,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-
-print("-"*100+"\n")
-
-print("GT: voc, Pred:yoloFloat")
-show("./C0025_00505.jpg","./C0025_00505.xml","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-
-print("GT: coco, Pred:yoloFloat")
-show("./C0025_00505.jpg","./labels.json","yoloFloat",boxesYoloFloat,cids,cfs,["PlasticContainer","PaperContaine"],(1.5,1.5))
-"""

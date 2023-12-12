@@ -1,0 +1,7 @@
+format_conversion/__pycache__/*
+format_conversion/.ipynb_checkpoints/*
+format_conversion/test/*
+
+__pycache__/*
+#_deprecate/*
+.ipynb_checkpoints/*
