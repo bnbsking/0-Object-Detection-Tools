@@ -63,4 +63,4 @@ This repo integrates the common useful tools for object detection.
 ### Output examples
 
 + Visualization
-![a](visualization/image.png)
+![a](visualization/image.jpg)
