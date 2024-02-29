@@ -147,19 +147,21 @@ def get_annotation(img_path, ant_path, class_list):
         raise ValueError("Unkown extension of annotation file")
 
 def show(class_list, img_path, ant_path="", pd_boxes_type="", pd_boxes=None, pd_cids=None, pd_cfs=None, \
-    save_path="", box_width=4, valueRatios=(1,1)): # use help(show) for more details
+    save_path="", box_width=4, value_ratios=(1,1)): # use help(show) for more details
     """
-    class_list: list[str]. class names
-    img_path: str. path to the image
-    ant_path: str. path to the annotation
-        if this is None, show black only
-    pd_boxes_type: str. '' or 'voc' or 'yolo' or 'yolo_int' or 'coco'
-        if this is None, show black only and pd_boxes, pd_cids, pd_cfs are not used
-    pd_boxes: None or ndarray in shape (N,4)
-    pd_cids:  None or ndarray in shape (N,). class index
-    pd_cfs:   None or ndarray in shape (N,). confidence
-    save_folder: str. save at the folder with same filename. if this is None, just show
-    box_width: int. predicted box width while plotting
+    This function helps visualize an image with varies format of label or prediction.
+    
+    + class_list: list[str]. List of class names
+    + img_path: str. Path to the image (e.g. *.jpg, ... etc.)
+    + ant_path: str or None. Path to the annotation (e.g. *.voc, *.txt, *.json). If None, show black img only.
+    
+    + pd_boxes_type: str. '' or 'voc' or 'yolo' or 'yolo_int' or 'coco'. If None, show black only, (pd_boxes, pd_cids, pd_cfs) are not used.
+    + pd_boxes: None or ndarray in shape (N,4)
+    + pd_cids: None or ndarray in shape (N,) class index
+    + pd_cfs: None or ndarray in shape (N,) confidence
+    
+    + save_folder: str or None. Save at the folder with same filename. If None, show only but not save.
+    + value_ratios: int. Predicted boxes width.
     """
     
     img_raw = cv2.imread(img_path)[:,:,::-1]/255
@@ -189,15 +191,19 @@ def show(class_list, img_path, ant_path="", pd_boxes_type="", pd_boxes=None, pd_
             img_pd[ymin:ymax, xmin-box_width:xmin+box_width, :] = colors[pd_cids[i]]
             img_pd[ymin:ymax, xmax-box_width:xmax+box_width, :] = colors[pd_cids[i]]
             # confidence patches
-            ud, td = int(cfsPD[i]*10), int(cfsPD[i]*100)%10
-            P = getPatch(ud,td,color=colors[cidsPD[i]])
-            (ph, pw, _), (rh,rw) = P.shape, valueRatios
+            ud, td = int(pd_cfs[i]*10), int(pd_cfs[i]*100)%10
+            P = getPatch(ud,td,color=colors[pd_cids[i]])
+            (ph, pw, _), (rh,rw) = P.shape, value_ratios
             P = cv2.resize( P, (int(pw*rw),int(ph*rh)) )
             try:
-                if ymin>=P.shape[0] and xmin+P.shape[1]<imgPD.shape[1]: # upper bar
-                    imgPD[ymin-P.shape[0]:ymin,xmin:xmin+P.shape[1],:] = P
-                elif ymax+P.shape[0]<imgPD.shape[0] and xmin+P.shape[1]<imgPD.shape[1]: # down bar
-                    imgPD[ymax:ymax+P.shape[0],xmin:xmin+P.shape[1],:] = P
+                if ymin>=P.shape[0] and xmin+P.shape[1]<img_pd.shape[1]: # upper bar - up
+                    img_pd[ymin-P.shape[0]:ymin,xmin:xmin+P.shape[1],:] = P
+                elif ymax+P.shape[0]<img_pd.shape[0] and xmin+P.shape[1]<img_pd.shape[1]: # down bar - down
+                    img_pd[ymax:ymax+P.shape[0],xmin:xmin+P.shape[1],:] = P
+                elif ymin+P.shape[0]<img_pd.shape[0] and xmin+P.shape[1]<img_pd.shape[1]:
+                    img_pd[ymin:ymin+P.shape[0],xmin:xmin+P.shape[1],:] = P # upper bar - down
+                elif ymax+P.shape[0]>0 and xmin+P.shape[1]<img_pd.shape[1]: # down bar - up
+                    img_pd[ymax-P.shape[0]:ymax,xmin:xmin+P.shape[1],:] = P
             except:
                 pass
 

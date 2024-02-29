@@ -78,6 +78,14 @@ def boxVoc2Any(des_type, xmin, ymin, xmax, ymax, width=None, height=None): # wid
 ### following are conversions ###
 
 def voc2yolo(sourceFolder, destFolder, classL):
+    """
+    Convert labels from voc to yolo.
+
+    sourceFolder: str. Path of source that contains *.jpg and *.xml.
+    destFolder: str. Path of destination.
+    classL: list[str]. list of class names.
+    """
+
     os.makedirs(destFolder, exist_ok=True)
     with open(f"{destFolder}/classes.txt","w") as f:
         for c in classL:
@@ -101,6 +109,14 @@ def voc2yolo(sourceFolder, destFolder, classL):
                 f.write(f"{cid} {pad(cx)} {pad(cy)} {pad(w)} {pad(h)}\n")
 
 def voc2coco(sourceFolder, destPath, classL):
+    """
+    Convert labels from voc to coco.
+
+    sourceFolder: str. Path of source that contains *.jpg and *.xml.
+    destFolder: str. Path of destination.
+    classL: list[str]. list of class names.
+    """
+
     D = {"images":[], "annotations":[], "categories": []}
     D["categories"] = [ {"supercategory":"none","id":i,"name":className} for i,className in enumerate(classL,0) ] # index start from 0
     sourceL = sorted(glob.glob(f"{sourceFolder}/*.xml"))
@@ -127,6 +143,15 @@ def voc2coco(sourceFolder, destPath, classL):
         json.dump(D,f)
 
 def yolo2voc(sourceFolder, destFolder, classL=None, defaultAspect=None):
+    """
+    Convert labels from yolo to voc.
+
+    sourceFolder: str. Path of source that contains *.jpg and *.txt.
+    destFolder: str. Path of destination.
+    classL: list[str] or None. list of class names. If 'classes.txt' is in sourceFolder, this arg can be None.
+    defaultAspect: (int,int). Can be specified if all the images have same shape, so the box can be compute without reading all images. 
+    """
+
     global xml0, obj0, end0
     os.makedirs(destFolder, exist_ok=True)
     classL = classL if classL else [ line.replace('\n','') for line in open(f"{sourceFolder}/classes.txt","r").readlines() ]
@@ -139,7 +164,7 @@ def yolo2voc(sourceFolder, destFolder, classL=None, defaultAspect=None):
         if defaultAspect:
             height, width = defaultAspect
         else:
-            img = cv2.imread(txtPath.replace('.txt','.jpg'))
+            img = cv2.imread(txtPath.replace('.txt','.jpg')) if "classes.txt" not in txtPath else None
             if type(img)!=type(None):
                 height, width, _ = img.shape
             else:
@@ -155,6 +180,13 @@ def yolo2voc(sourceFolder, destFolder, classL=None, defaultAspect=None):
             f.write(xml)
 
 def coco2voc(sourcePath, destFolder):
+    """
+    Convert labels from coco to voc.
+
+    sourcePath: str. Path of the annotation file *.json.
+    destFolder: str. Path of destination.
+    """
+
     global xml0, obj0, end0
     os.makedirs(destFolder, exist_ok=True)
     D      = json.load( open(sourcePath,"r") )
@@ -179,6 +211,15 @@ def coco2voc(sourcePath, destFolder):
             f.write(xml)
 
 def yolo2coco(sourceFolder, destPath, classL=None, defaultAspect=None):
+    """
+    Convert labels from yolo to coco.
+
+    sourceFolder: str. Path of source that contains *.jpg and *.txt.
+    destFolder: str. Path of destination.
+    classL: list[str] or None. list of class names. If 'classes.txt' is in sourceFolder, this arg can be None.
+    defaultAspect: (int,int). Can be specified if all the images have same shape, so the box can be compute without reading all images. 
+    """
+
     classL  = classL if classL else [ line.replace('\n','') for line in open(f"{sourceFolder}/classes.txt","r").readlines() ]        
     D = {"images":[], "annotations":[], "categories": []}
     D["categories"] = [ {"supercategory":"none","id":i,"name":className} for i,className in enumerate(classL,0) ] # index start from 0
@@ -204,6 +245,13 @@ def yolo2coco(sourceFolder, destPath, classL=None, defaultAspect=None):
         json.dump(D,f)
         
 def coco2yolo(sourcePath, destFolder):
+    """
+    Convert labels from coco to yolo.
+
+    sourcePath: str. Path of the annotation file *.json.
+    destFolder: str. Path of destination.
+    """
+
     os.makedirs(destFolder, exist_ok=True)
     D      = json.load( open(sourcePath,"r") )
     with open(f"{destFolder}/classes.txt","w") as f:
