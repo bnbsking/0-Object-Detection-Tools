@@ -24,6 +24,7 @@ This repo integrates the common useful tools for object detection.
     # show img with coco annotation and coco prediction
     vis.show(["dog","cat"], f"data/coco/pic0.jpg", "data/yolo/pic0.txt", "yolo", pd_boxes, pd_cids, pd_cfs)
     ```
+    See more details and examples in `visualization/`
 
 + Format Conversion
     ```bash

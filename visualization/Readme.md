@@ -47,4 +47,21 @@ Visualization of images with any format ground truth and predictions
     # show img with coco annotation and coco prediction
     vis.show(["dog","cat"], f"data/coco/pic0.jpg", "data/yolo/pic0.txt", "yolo", pd_boxes, pd_cids, pd_cfs)
     ```
-    ```
+
+### File structure
++ data/ # shortcut to ../_data
+    + coco/
+        + pic*.jpg
+        + coco.json
+    + voc/
+        + pic*.jpg
+        + pic*.xml
+    + yolo/
+        + pic*.jpg
+        + pic*.txt
++ pred/ # shotcut to ../_pred
+    + coco_box.json
+    + voc_box.json
+    + yolo_box.json
++ example.ipynb # full example
++ visualization.py # shotcut to ../visulization.py

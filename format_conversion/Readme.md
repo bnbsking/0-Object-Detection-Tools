@@ -125,7 +125,7 @@ import convert
         ```
 
 ### File structure
-+ data/ # dataset in different format
++ data/ # shortcut to ../_data
     + coco/
         + pic*.jpg
         + coco.json
