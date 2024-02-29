@@ -1,4 +1,6 @@
 # e.g. python confusion_matrix.py NPlC,PlC,NPa,Pa 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
+# left txt (cls xmin ymin xmax ymax): 3 482 187 906 561
+# right txt (cls conf xmin ymin xmax ymax):2 0.9988 1041 81 1237 251
 import numpy as np
 
 
@@ -31,11 +33,13 @@ def box_iou_calc(boxes1, boxes2):
 
 
 class ConfusionMatrix:
-    def __init__(self, num_classes: int, CONF_THRESHOLD=0.3, IOU_THRESHOLD=0.5):
+    def __init__(self, num_classes: int, CONF_THRESHOLD=0.3, IOU_THRESHOLD=0.5, gtFile=None, accumFileL=None):
         self.matrix = np.zeros((num_classes + 1, num_classes + 1))
         self.num_classes = num_classes
         self.CONF_THRESHOLD = CONF_THRESHOLD
         self.IOU_THRESHOLD = IOU_THRESHOLD
+        self.gtFile = gtFile
+        self.accumFileL = accumFileL
 
     def process_batch(self, detections, labels: np.ndarray):
         """
@@ -81,13 +85,19 @@ class ConfusionMatrix:
             if all_matches.shape[0] > 0 and all_matches[all_matches[:, 0] == i].shape[0] == 1:
                 detection_class = detection_classes[int(all_matches[all_matches[:, 0] == i, 1][0])]
                 self.matrix[detection_class, gt_class] += 1
+                if self.gtFile:
+                    self.accumFileL[detection_class][gt_class].append(self.gtFile) #
             else:
                 self.matrix[self.num_classes, gt_class] += 1
+                if self.gtFile:
+                    self.accumFileL[self.num_classes][gt_class].append(self.gtFile) #
 
         for i, detection in enumerate(detections):
             if all_matches.shape[0] and all_matches[all_matches[:, 1] == i].shape[0] == 0:
                 detection_class = detection_classes[i]
                 self.matrix[detection_class, self.num_classes] += 1
+                if self.gtFile:
+                    self.accumFileL[detection_class][self.num_classes].append(self.gtFile) #
 
     def return_matrix(self):
         return self.matrix
@@ -95,62 +105,6 @@ class ConfusionMatrix:
     def print_matrix(self):
         for i in range(self.num_classes + 1):
             print(' '.join(map(str, self.matrix[i])))
-
-import sys, glob
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-
-_, classes, threshold, gtPath, dtPath = sys.argv
-classL, threshold, gtPathL, dtPathL = classes.split(","), float(threshold), sorted(glob.glob(f"{gtPath}/*.txt")), sorted(glob.glob(f"{dtPath}/*.txt"))
-n = len(classL)
-assert len(gtPathL)==len(dtPathL)
-
-M = np.zeros( (n+1,n+1) ) # col:gt, row:pd
-for i,(gtPath,dtPath) in enumerate(zip(gtPathL,dtPathL)):
-    with open(gtPath,"r") as f:
-        labels = []
-        for line in f.readlines():
-            cid, xmin, ymin, xmax, ymax = line.replace("\n","").split(" ")
-            labels.append( [int(cid), int(xmin), int(ymin), int(xmax), int(ymax)] )
-        labels = np.array(labels)
-    with open(dtPath,"r") as f:
-        detections = []
-        for line in f.readlines():
-            cid, conf, xmin, ymin, xmax, ymax = line.replace("\n","").split(" ")
-            detections.append( [int(xmin), int(ymin), int(xmax), int(ymax), float(conf), int(cid)] )
-        detections = np.array(detections)
-    cm = ConfusionMatrix(n, CONF_THRESHOLD=threshold, IOU_THRESHOLD=0.5)
-    cm.process_batch(detections,labels)
-    M += cm.return_matrix()
-N = M / M.sum(axis=0)
-
-plt.figure(figsize=(10,5))
-#
-fig = plt.subplot(1,2,1)
-plt.title(f"Confusion Matrix - Number", fontsize=12)
-plt.xlabel("GT", fontsize=12)
-plt.ylabel("PD", fontsize=12)
-fig.set_xticks(np.arange(n+1)) # values
-fig.set_xticklabels(classL+['BG']) # labels
-fig.set_yticks(np.arange(n+1)) # values
-fig.set_yticklabels(classL+['BG']) # labels
-plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
-for i in range(n+1):
-    for j in range(n+1):
-        plt.text(j, i, int(M[i][j]), ha="center", va="center", color="black" if N[i][j]<0.9 else "white", fontsize=12)
-#
-fig = plt.subplot(1,2,2)
-plt.title(f"Confusion Matrix - Ratio", fontsize=12)
-plt.xlabel("GT", fontsize=12)
-plt.ylabel("PD", fontsize=12)
-fig.set_xticks(np.arange(n+1)) # values
-fig.set_xticklabels(classL+['BG']) # labels
-fig.set_yticks(np.arange(n+1)) # values
-fig.set_yticklabels(classL+['BG']) # labels
-plt.imshow(N, cmap=mpl.cm.Blues, interpolation='nearest')
-for i in range(n+1):
-    for j in range(n+1):
-        plt.text(j, i, round(N[i][j],2), ha="center", va="center", color="black" if N[i][j]<0.9 else "white", fontsize=12)
-#plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.cm.Blues))
-#
-plt.savefig("result.jpg")
+            
+    def getAccumFileL(self):
+        return self.accumFileL

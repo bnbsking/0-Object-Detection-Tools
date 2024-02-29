@@ -161,7 +161,8 @@ def show(class_list, img_path, ant_path="", pd_boxes_type="", pd_boxes=None, pd_
     + pd_cfs: None or ndarray in shape (N,) confidence
     
     + save_folder: str or None. Save at the folder with same filename. If None, show only but not save.
-    + value_ratios: int. Predicted boxes width.
+    + box_width: int. Predicted boxes width.
+    + value_ratios: (int,int). Confidence patch size ratio.
     """
     
     img_raw = cv2.imread(img_path)[:,:,::-1]/255
