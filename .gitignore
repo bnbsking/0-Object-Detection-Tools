@@ -1,6 +1,6 @@
 **/__pycache__/
 **/.ipynb_checkpoints/
 
-format_conversion/output/*
+output/*
 
 #_deprecate/*
