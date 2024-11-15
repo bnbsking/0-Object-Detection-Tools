@@ -1,4 +1,7 @@
-import json, glob, os
+import copy
+import json
+import glob
+import os
 from tqdm import tqdm
 from typing import Dict, List, Tuple, Union
 
@@ -8,6 +11,203 @@ import matplotlib.pyplot as plt
 import cv2
 import confusion_matrix
 #import visualization as viz
+
+
+class MetricsPipeline:
+    def __init__(
+            self,
+            num_classes: int,
+            labels: List[np.ndarray],
+            detections: List[np.ndarray],
+            func_dicts: List[Dict],
+        ):
+        """
+        Given basic arguments, self.run iterates func_dicts and returns all metrics as results.
+        Args:
+            num_classes (int): number of classes
+            labels (List[np.ndarray]): length is the number of images. each numpy has shape (N, 5).
+                N is the number of ground truth, and 5 refers to (cid, xmin, ymin, xmax, ymax)
+            detections (List[np.ndarray]):length is the number of images. each numpy has shape (M, 5).
+                M is the number of predictions, and 6 refers to (xmin, ymin, xmax, ymax, conf, cid)
+            func_dicts (List[Dict]): length is the number of metrics function.
+                each dict has the format {"func_name": str, "args": Dict, "log_name": str}.
+                self.run saves the output in self.metrics, where log_name is key and output is value
+        """
+        self.num_classes = num_classes
+        self.labels = labels
+        self.detections = detections
+        self.func_dicts = func_dicts
+        self.metrics = {}
+
+    def run(self):
+        for func_dict in self.func_dicts:
+            self.metrics[func_dict["log_name"]] = \
+                getattr(self, func_dict["func_name"])(**func_dict["func_args"])
+        return self.metrics
+
+    def get_pr_curves(self, k: int = 101) -> List[Dict[str, List[float]]]:
+        pr_curves = [
+            {
+                "precision": [0.] * k,
+                "recall": [0.] * k,
+            } for _ in range(self.num_classes)
+        ]
+
+        for i, threshold in tqdm(enumerate(np.linspace(0, 1, k))):
+            # get confusion of the threshold
+            confusion = np.zeros(
+                (self.num_classes + 1, self.num_classes + 1)
+            )  # (i, j) = (pd, gt)
+            for label, detection in zip(self.labels, self.detections):
+                img_confusion = confusion_matrix.ConfusionMatrix(
+                    self.num_classes,
+                    CONF_THRESHOLD = threshold,
+                    IOU_THRESHOLD = 0.5
+                )
+                img_confusion.process_batch(detection, label)
+                confusion += img_confusion.return_matrix()
+            
+            # update pr curve at the threshold from confusion
+            row_sum = confusion.sum(axis=1)
+            col_sum = confusion.sum(axis=0)
+            for cid in range(self.num_classes):
+                pr_curves[cid]["precision"][i] = confusion[cid][cid]/row_sum[cid] if row_sum[cid] else 0
+                pr_curves[cid]["recall"][i] = confusion[cid][cid]/col_sum[cid] if col_sum[cid] else 0
+
+        return pr_curves
+
+    def get_refine_pr_curves(self, pr_curves_key = "pr_curves") -> List[Dict[str, List[float]]]:
+        """
+        sorted by recall, and enhance precision by next element reversely
+        Args:
+            pr_curves_key (str): get pr_curves from self.metrics and refine it.
+                you must call self.get_pr_curves in advance
+        """
+        pr_curves = copy.deepcopy(self.metrics[pr_curves_key])
+        for cid in range(len(pr_curves)):
+            recall_arr = pr_curves[cid]["recall"].copy()
+            precision_arr = pr_curves[cid]["precision"].copy()
+            zip_arr = sorted(zip(recall_arr, precision_arr))
+            recall_arr, precision_arr = zip(*zip_arr)
+            recall_arr, precision_arr = list(recall_arr), list(precision_arr)
+            for i in range(1, len(precision_arr)):
+                precision_arr[-1-i] = max(precision_arr[-1-i], precision_arr[-i])
+            pr_curves[cid]["refine_recall"] = recall_arr
+            pr_curves[cid]["refine_precision"] = precision_arr
+        return pr_curves
+    
+    def get_aps(self, refine_pr_curves_key: str, gt_class_cnts: List[int] = None) -> Dict:
+        """
+        Args:
+            refine_pr_curves_key (str): get refine_pr_curves from self.metrics and compute aps
+                you must call self.get_refine_pr_curves in advance
+        """
+        pr_curves = self.metrics[refine_pr_curves_key]
+        aps = {
+            "ap_list": [],
+            "map": -1,
+            "wmap": -1
+        }
+        num_classes = len(pr_curves)
+        for cid in range(num_classes):
+            ap = 0
+            for i in range(len(pr_curves[0]["precision"])-1):  # 101-1
+                ap += pr_curves[cid]["refine_precision"][i] * \
+                    (pr_curves[cid]["refine_recall"][i+1] - pr_curves[cid]["refine_recall"][i])
+            aps["ap_list"].append(round(ap,3))
+        aps["map"] = round(sum(aps["ap_list"]) / num_classes, 3)
+        aps["wmap"] = round(
+            sum(ap * cnt for ap, cnt in zip(aps["ap_list"], gt_class_cnts)) / sum(gt_class_cnts), 3)\
+            if gt_class_cnts else -1
+        return aps
+    
+    def get_best_threshold(self, strategy: str = "f1", **kwargs):
+        if strategy in {"f1", "precision"}:
+            if strategy == "f1":
+                score_func = lambda precision, recall: 2 * precision * recall / (precision + recall + 1e-10)
+            elif strategy == "precision":
+                score_func = lambda precision, recall: precision if recall >= 0.5 else 0
+            pr_curves_key = kwargs["pr_curves_key"]
+            gt_class_cnts = kwargs["gt_class_cnts"]
+
+            pr_curves = self.metrics[pr_curves_key]
+            num_classes = len(pr_curves)
+            thresholds = np.linspace(0, 1, len(pr_curves[0]["precision"]))  # 101
+            weighted_score = [0] * len(thresholds)
+            for cid in range(num_classes):
+                for i, (precision, recall) in enumerate(zip(pr_curves[cid]["precision"], pr_curves[cid]["recall"])):
+                    score = score_func(precision, recall)
+                    weighted_score[i] += score * gt_class_cnts[cid] / sum(gt_class_cnts)
+            best_score, best_threshold = max(zip(weighted_score, thresholds))
+            return {"best_score": best_score, "best_threshold": best_threshold}
+
+    def plotConfusion(self):
+        self.strategy = strategy
+        n = len(self.classL)
+        M = np.zeros( (n+1,n+1) ) # col:gt, row:pd
+        self.accumFileL = [ [[] for j in range(n+1)] for i in range(n+1) ] # (n+1,n+1) each grid is path list
+        for j,(imgPath,labels,detections) in enumerate(zip(self.imgPathL,self.labels,self.detections)):
+            cm = confusion_matrix.ConfusionMatrix(n, CONF_THRESHOLD=self.bestThreshold, IOU_THRESHOLD=0.5, gtFile=imgPath, accumFileL=self.accumFileL)
+            cm.process_batch(detections,labels)
+            M += cm.return_matrix()
+            self.accumFileL = cm.getAccumFileL()
+
+
+class PlottingPipeline:
+    def __init__(self, class_list: List[str], save_folder: str, func_dicts: List[Dict]):
+        self.class_list = class_list
+        self.save_folder = save_folder
+        self.func_dicts = func_dicts
+        os.makedirs(save_folder, exist_ok=True)
+
+    def run(self):
+        for func_dict in self.func_dicts:
+            getattr(self, func_dict["func_name"])(**func_dict["func_args"])
+    
+    def plot_aps(self, ap_list: List[float], map: float, wmap: float = -1):
+        plt.figure()
+        ax = plt.subplot(1, 1, 1)
+        ax.set_title(f"map={round(map, 3)}, wmap={round(wmap, 3)}", fontsize=16)
+        ax.bar(self.class_list, ap_list)
+        for i in range(len(self.class_list)):
+            ax.text(i, ap_list[i], ap_list[i], ha="center", va="bottom", fontsize=16)
+        plt.savefig(os.path.join(self.save_folder, "aps.jpg"))
+        plt.show()
+
+    def plot_pr_curves(self, refine_pr_curves: List[Dict[str, List[float]]]):
+        num_classes = len(refine_pr_curves)
+        plt.figure(figsize=(6 * num_classes, 4))
+        for cid in range(num_classes):
+            plt.subplot(1, num_classes, 1 + cid)
+            plt.scatter(refine_pr_curves[cid]["refine_recall"], refine_pr_curves[cid]["refine_precision"])
+            plt.plot(refine_pr_curves[cid]["refine_recall"], refine_pr_curves[cid]["refine_precision"])
+            plt.xlim(-0.05, 1.05)
+            plt.ylim(-0.05, 1.05)
+            plt.grid('on')
+            plt.title(f"{cid}-{self.class_list[cid]}", fontsize=16)
+            plt.xlabel("recall", fontsize=16)
+            plt.ylabel("precision", fontsize=16)
+        plt.savefig(os.path.join(self.save_folder, "pr_curves.jpg"))
+        plt.show()
+
+    def plot_prf_curves(self, pr_curves: List[Dict[str, List[float]]]):
+        num_classes = len(pr_curves)
+        plt.figure(figsize=(6 * num_classes, 4))
+        for cid in range(num_classes):
+            f1_arr = [2 * p * r / (p + r + 1e-10) for p, r in \
+                zip(pr_curves[cid]["precision"], pr_curves[cid]["recall"])]
+            plt.subplot(1, num_classes, 1 + cid)
+            plt.plot(pr_curves[cid]["precision"])
+            plt.plot(pr_curves[cid]["recall"])
+            plt.plot(f1_arr)
+            plt.xlim(-5, 105)
+            plt.ylim(-0.05, 1.05)
+            plt.grid('on')
+            plt.title(f"{cid}-{self.class_list[cid]}", fontsize=16)
+            plt.xlabel("threshold", fontsize=16)
+            plt.legend(labels=["precision", "recall", "f1"], fontsize=12)
+        plt.savefig(os.path.join(self.save_folder, "prf_curves.jpg"))
+        plt.show()
 
 
 class Result:
@@ -39,17 +239,72 @@ class Result:
         num_classes = len(general["categories"])
         labels = self.get_labels(general["data"])
         detections = self.get_detections(general["data"])
+        gt_class_cnts = self.get_gt_class_cnts(num_classes, general["data"])
 
-        pr_curves = self.get_pr_curves(num_classes, labels, detections)
-        #print(pr_curves)
-        pr_curves = self.get_refine_pr_curves(pr_curves)
-        #print(pr_curves)
-        aps = self.get_aps(pr_curves, None)
-        print(aps)
+        pipeline = MetricsPipeline(
+            num_classes = num_classes,
+            labels = labels,
+            detections = detections,
+            func_dicts = [
+                {
+                    "func_name": "get_pr_curves",
+                    "func_args": {},
+                    "log_name": "pr_curves"
+                },
+                {
+                    "func_name": "get_refine_pr_curves",
+                    "func_args": {"pr_curves_key": "pr_curves"},
+                    "log_name": "refine_pr_curves"
+                },
+                {
+                    "func_name": "get_aps",
+                    "func_args": {
+                        "refine_pr_curves_key": "refine_pr_curves",
+                        "gt_class_cnts": gt_class_cnts
+                    },
+                    "log_name": "aps"
+                },
+                {
+                    "func_name": "get_best_threshold",
+                    "func_args": {
+                        "strategy": "f1",
+                        "pr_curves_key": "pr_curves",
+                        "gt_class_cnts": gt_class_cnts
+                    },
+                    "log_name": "best_threshold"
+                },
+                # {
+                #     "func_name": "get_confusion",
+                #     "func_args": {
+                #         "threshold": "pr_curves",
+                #         "gt_class_cnts": gt_class_cnts
+                #     },
+                #     "log_name": "best_threshold"
+                # }
+            ]
+        )
+        metrics = pipeline.run()
+        print(metrics)
 
-        self.plot_aps(class_list, aps, save_folder)
-        self.plot_pr_curves(class_list, pr_curves, save_folder)
-        self.plot_prf_curves(class_list, pr_curves, save_folder)
+        plotting = PlottingPipeline(
+            class_list = class_list,
+            save_folder = save_folder,
+            func_dicts = [
+                {
+                    "func_name": "plot_aps",
+                    "func_args": metrics["aps"],
+                },
+                {
+                    "func_name": "plot_pr_curves",
+                    "func_args": {"refine_pr_curves": metrics["refine_pr_curves"]},
+                },
+                {
+                    "func_name": "plot_prf_curves",
+                    "func_args": {"pr_curves": metrics["pr_curves"]},
+                }
+            ]
+        )
+        plotting.run()
 
     def get_labels(self, data_dict_list: List[Dict]) -> List[np.ndarray]:
         labels = []
@@ -71,149 +326,15 @@ class Result:
             detections.append(np.array(img_detect))
         return detections
 
-    def get_pr_curves(
-            self,
-            num_classes: int,
-            labels: List[np.ndarray],
-            detections: List[np.ndarray],
-            k: int = 101
-        ) -> List[Dict[str, List[float]]]:
-        pr_curves = [
-            {
-                "precision": [0.] * k,
-                "recall": [0.] * k,
-            } for _ in range(num_classes)
-        ]
-        for i, threshold in tqdm(enumerate(np.linspace(0, 1, k))):
-            # get confusion of the threshold
-            confusion = np.zeros((num_classes+1, num_classes+1))  # (i, j) = (pd, gt)
-            for label, detection in zip(labels, detections):
-                img_confusion = confusion_matrix.ConfusionMatrix(
-                    num_classes,
-                    CONF_THRESHOLD = threshold,
-                    IOU_THRESHOLD = 0.5
-                )
-                img_confusion.process_batch(detection, label)
-                confusion += img_confusion.return_matrix()
-            
-            # update pr curve at the threshold from confusion
-            row_sum = confusion.sum(axis=1)
-            col_sum = confusion.sum(axis=0)
-            for cid in range(num_classes):
-                pr_curves[cid]["precision"][i] = confusion[cid][cid]/row_sum[cid] if row_sum[cid] else 0
-                pr_curves[cid]["recall"][i] = confusion[cid][cid]/col_sum[cid] if col_sum[cid] else 0
-        return pr_curves
-
-    def get_refine_pr_curves(
-            self,
-            pr_curves: List[Dict[str, List[float]]]
-        ) -> List[Dict[str, List[float]]]:
-        """
-        sorted by recall, and enhance precision by next element reversely
-        """
-        for cid in range(len(pr_curves)):
-            recall_arr = pr_curves[cid]["recall"].copy()
-            precision_arr = pr_curves[cid]["precision"].copy()
-            zip_arr = sorted(zip(recall_arr, precision_arr))
-            recall_arr, precision_arr = zip(*zip_arr)
-            recall_arr, precision_arr = list(recall_arr), list(precision_arr)
-            for i in range(1, len(precision_arr)):
-                precision_arr[-1-i] = max(precision_arr[-1-i], precision_arr[-i])
-            pr_curves[cid]["refine_recall"] = recall_arr
-            pr_curves[cid]["refine_precision"] = precision_arr
-        return pr_curves
-    
-    def get_aps(
-            self,
-            pr_curves: List[Dict[str, List[float]]],
-            gt_class_cnts: List[int]
-        ) -> Dict:
-        aps = {
-            "ap_list": [],
-            "map": -1,
-            "wmap": -1
-        }
-        num_classes = len(pr_curves)
-        for cid in range(num_classes):
-            ap = 0
-            for i in range(len(pr_curves[0]["precision"])-1):
-                ap += pr_curves[cid]["refine_precision"][i] * \
-                    (pr_curves[cid]["refine_recall"][i+1] - pr_curves[cid]["refine_recall"][i])
-            aps["ap_list"].append(round(ap,3))
-        aps["map"] = sum(aps["ap_list"]) / num_classes
-        aps["wmap"] = sum(ap * cnt for ap, cnt in zip(aps["ap_list"], gt_class_cnts))\
-            / sum(gt_class_cnts) if gt_class_cnts else -1
-        return aps
-    
-    def plot_aps(self, class_list: List[str], aps: Dict, save_folder: str):
-        os.makedirs(save_folder, exist_ok=True)
-        plt.figure()
-        ax = plt.subplot(1, 1, 1)
-        ax.set_title(f"map={aps.get('map', -1)}, wmap={aps.get('wmap', -1)}", fontsize=16)
-        ax.bar(class_list, aps["ap_list"])
-        for i in range(len(class_list)):
-            ax.text(i, aps["ap_list"][i], aps["ap_list"][i], ha="center", va="bottom", fontsize=16)
-        plt.savefig(os.path.join(save_folder, "aps.jpg"))
-        plt.show()
-
-    def plot_pr_curves(self, class_list: List[str], pr_curves: List[Dict[str, List[float]]], save_folder: str):
-        os.makedirs(save_folder, exist_ok=True)
-        num_classes = len(pr_curves)
-        plt.figure(figsize=(6 * num_classes, 4))
-        for cid in range(num_classes):
-            plt.subplot(1, num_classes, 1 + cid)
-            plt.scatter(pr_curves[cid]["refine_recall"], pr_curves[cid]["refine_precision"])
-            plt.plot(pr_curves[cid]["refine_recall"], pr_curves[cid]["refine_precision"])
-            plt.xlim(-0.05, 1.05)
-            plt.ylim(-0.05, 1.05)
-            plt.grid('on')
-            plt.title(f"{cid}-{class_list[cid]}", fontsize=16)
-            plt.xlabel("recall", fontsize=16)
-            plt.ylabel("precision", fontsize=16)
-        plt.savefig(os.path.join(save_folder, "pr_curves.jpg"))
-        plt.show()
-
-    def plot_prf_curves(self, class_list: List[str], pr_curves: List[Dict[str, List[float]]], save_folder: str):
-        os.makedirs(save_folder, exist_ok=True)
-        num_classes = len(pr_curves)
-        plt.figure(figsize=(6 * num_classes, 4))
-        for cid in range(num_classes):
-            f1_arr = [2 * p * r / (p + r + 1e-10) for p, r in \
-                zip(pr_curves[cid]["precision"], pr_curves[cid]["recall"])]
-            plt.subplot(1, num_classes, 1 + cid)
-            plt.plot(pr_curves[cid]["precision"])
-            plt.plot(pr_curves[cid]["recall"])
-            plt.plot(f1_arr)
-            plt.xlim(-5, 105)
-            plt.ylim(-0.05, 1.05)
-            plt.grid('on')
-            plt.title(f"{cid}-{class_list[cid]}", fontsize=16)
-            plt.xlabel("threshold", fontsize=16)
-            plt.legend(labels=["precision", "recall", "f1"], fontsize=12)
-        plt.savefig(os.path.join(save_folder, "prf_curves.jpg"))
-        plt.show()
-
-    
-
-    def _getBestThreshold(self):
-        n = len(self.classL)
-        wScore = [0]*101
-        for i in range(101):
-            for j in range(n):                
-                p, r = self.PR[j]["precision"][i], self.PR[j]["recall"][i]
-                if self.strategy=="fvalue":
-                    score = 2*p*r/(p+r) if p+r else 0
-                elif self.strategy=="precision":
-                    score = p if r>=0.5 else 0
-                else:
-                    raise
-                wScore[i] += score*self.classNumL[j]/sum(self.classNumL)
-        bestScore, self.bestThreshold = max(zip(wScore,[round(0.01*i,2) for i in range(101)]))
-        print(f"bestScore={round(bestScore,2)}, best_threshold={self.bestThreshold}")
+    def get_gt_class_cnts(self, num_classes: int, data_dict_list: List[Dict]) -> List[int]:
+        gt_class_cnts = [0] * num_classes
+        for data_dict in data_dict_list:
+            for gt_cls in data_dict["gt_cls"]:
+                gt_class_cnts[gt_cls] += 1
+        return gt_class_cnts
     
     def plotConfusion(self, strategy="fvalue"):
         self.strategy = strategy
-        self._getBestThreshold()
         n = len(self.classL)
         M = np.zeros( (n+1,n+1) ) # col:gt, row:pd
         self.accumFileL = [ [[] for j in range(n+1)] for i in range(n+1) ] # (n+1,n+1) each grid is path list
@@ -265,7 +386,7 @@ class Result:
             for j in range(n+1):
                 plt.text(j, i, round(P[i][j],2), ha="center", va="center", color="black" if P[i][j]<0.9 else "white", fontsize=12)
         # fig3 - recall
-        fig = plt.subplot(1,3,3)
+        fig = plt.subplot(1, 3, 3)
         plt.title(f"Confusion Matrix - Col norm (Recall)", fontsize=12)
         plt.xlabel("GT", fontsize=12)
         plt.ylabel("PD", fontsize=12)

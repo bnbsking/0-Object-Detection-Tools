@@ -1,6 +1,3 @@
-# e.g. python confusion_matrix.py NPlC,PlC,NPa,Pa 0.31 ../data/labv2/testv2/yoloIntAnt/ ../exps/xavier_messy3k_DETReg_fine_tune_full_coco/txt
-# left txt (cls xmin ymin xmax ymax): 3 482 187 906 561
-# right txt (cls conf xmin ymin xmax ymax):2 0.9988 1041 81 1237 251
 import numpy as np
 
 
@@ -33,7 +30,14 @@ def box_iou_calc(boxes1, boxes2):
 
 
 class ConfusionMatrix:
-    def __init__(self, num_classes: int, CONF_THRESHOLD=0.3, IOU_THRESHOLD=0.5, gtFile=None, accumFileL=None):
+    def __init__(
+            self,
+            num_classes: int,
+            CONF_THRESHOLD=0.3,
+            IOU_THRESHOLD=0.5,
+            gtFile=None,
+            accumFileL=None
+        ):
         self.matrix = np.zeros((num_classes + 1, num_classes + 1))
         self.num_classes = num_classes
         self.CONF_THRESHOLD = CONF_THRESHOLD
