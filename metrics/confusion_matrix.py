@@ -1,3 +1,6 @@
+from collections import Counter
+from typing import List, Optional
+
 import numpy as np
 
 
@@ -33,19 +36,20 @@ class ConfusionMatrix:
     def __init__(
             self,
             num_classes: int,
-            CONF_THRESHOLD=0.3,
-            IOU_THRESHOLD=0.5,
-            gtFile=None,
-            accumFileL=None
+            CONF_THRESHOLD: float = 0.3,
+            IOU_THRESHOLD: float = 0.5,
+            img_idx: Optional[int] = None,
         ):
-        self.matrix = np.zeros((num_classes + 1, num_classes + 1))
+        self.confusion = np.zeros((num_classes + 1, num_classes + 1))
+        self.confusion_with_img_indices = [
+            [Counter() for _ in range(num_classes+1)] for _ in range(num_classes+1)
+        ]
         self.num_classes = num_classes
         self.CONF_THRESHOLD = CONF_THRESHOLD
         self.IOU_THRESHOLD = IOU_THRESHOLD
-        self.gtFile = gtFile
-        self.accumFileL = accumFileL
+        self.img_idx = img_idx
 
-    def process_batch(self, detections, labels: np.ndarray):
+    def process_batch(self, detections, labels: np.ndarray) -> None:
         """
         Return intersection-over-union (Jaccard index) of boxes.
         Both sets of boxes are expected to be in (x1, y1, x2, y2) format.
@@ -61,9 +65,9 @@ class ConfusionMatrix:
             detections = detections[detections[:, 4] > self.CONF_THRESHOLD]
         except IndexError or TypeError:
             # detections are empty, end of process
-            for i, label in enumerate(labels):
+            for i in range(len(labels)):
                 gt_class = gt_classes[i]
-                self.matrix[self.num_classes, gt_class] += 1
+                self.confusion[self.num_classes, gt_class] += 1
             return
 
         detection_classes = detections[:, 5].astype(np.int16)
@@ -84,31 +88,27 @@ class ConfusionMatrix:
 
             all_matches = all_matches[np.unique(all_matches[:, 0], return_index=True)[1]]
 
-        for i, label in enumerate(labels):
+        for i in range(len(labels)):
             gt_class = gt_classes[i]
             if all_matches.shape[0] > 0 and all_matches[all_matches[:, 0] == i].shape[0] == 1:
                 detection_class = detection_classes[int(all_matches[all_matches[:, 0] == i, 1][0])]
-                self.matrix[detection_class, gt_class] += 1
-                if self.gtFile:
-                    self.accumFileL[detection_class][gt_class].append(self.gtFile) #
+                self.confusion[detection_class, gt_class] += 1
+                if self.img_idx is not None:
+                    self.confusion_with_img_indices[detection_class][gt_class][self.img_idx] += 1  #
             else:
-                self.matrix[self.num_classes, gt_class] += 1
-                if self.gtFile:
-                    self.accumFileL[self.num_classes][gt_class].append(self.gtFile) #
+                self.confusion[self.num_classes, gt_class] += 1
+                if self.img_idx is not None:
+                    self.confusion_with_img_indices[self.num_classes][gt_class][self.img_idx] += 1  #
 
-        for i, detection in enumerate(detections):
+        for i in range(len(detections)):
             if all_matches.shape[0] and all_matches[all_matches[:, 1] == i].shape[0] == 0:
                 detection_class = detection_classes[i]
-                self.matrix[detection_class, self.num_classes] += 1
-                if self.gtFile:
-                    self.accumFileL[detection_class][self.num_classes].append(self.gtFile) #
+                self.confusion[detection_class, self.num_classes] += 1
+                if self.img_idx is not None:
+                    self.confusion_with_img_indices[detection_class][self.num_classes][self.img_idx] += 1  #
 
-    def return_matrix(self):
-        return self.matrix
-
-    def print_matrix(self):
-        for i in range(self.num_classes + 1):
-            print(' '.join(map(str, self.matrix[i])))
+    def get_confusion(self) -> np.ndarray:
+        return self.confusion
             
-    def getAccumFileL(self):
-        return self.accumFileL
+    def get_confusion_with_img_indices(self) -> List[List[Counter[int, int]]]:
+        return self.confusion_with_img_indices
