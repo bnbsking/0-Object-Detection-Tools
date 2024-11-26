@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 
 
 class PlottingPipeline:
-    def __init__(self, class_list: List[str], save_folder: str, func_dicts: List[Dict]):
+    def __init__(self, class_list: List[str], func_dicts: List[Dict], save_folder: str):
         self.class_list = class_list
-        self.save_folder = save_folder
         self.func_dicts = func_dicts
+        self.save_folder = save_folder
         os.makedirs(save_folder, exist_ok=True)
 
     def run(self):

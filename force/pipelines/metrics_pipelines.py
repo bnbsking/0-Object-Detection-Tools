@@ -1,5 +1,6 @@
 from collections import Counter
 import copy
+import json
 from tqdm import tqdm
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -8,31 +9,65 @@ import numpy as np
 from .detection_confusion_matrix import ConfusionMatrix
 
 
-class DetectionMetricsPipeline:
+class BaseMetricsPipeline:
+    def __init__(
+            self,
+            num_classes: int,
+            labels: List,
+            predictions: List,
+            func_dicts: List[Dict],
+            save_path: str
+        ):
+        self.num_classes = num_classes
+        self.labels = labels
+        self.predictions = predictions
+        self.func_dicts = func_dicts
+        self.save_path = save_path
+
+        self.metrics = {}
+    
+    def _deserialize(self, data: Dict):
+        if isinstance(data, dict):
+            return {k: self._deserialize(v) for k, v in data.items()}
+        elif isinstance(data, np.ndarray):
+            return data.tolist()
+        else:
+            return data
+
+    def run(self) -> Dict:
+        for func_dict in self.func_dicts:
+            self.metrics[func_dict["log_name"]] = \
+                getattr(self, func_dict["func_name"])(**func_dict["func_args"])
+        with open(self.save_path, "w") as f:
+            json.dump(self._deserialize(self.metrics), f, indent=4)
+        return self.metrics
+    
+
+class DetectionMetricsPipeline(BaseMetricsPipeline):
     def __init__(
             self,
             num_classes: int,
             labels: List[np.ndarray],
-            detections: List[np.ndarray],
+            predictions: List[np.ndarray],
             func_dicts: List[Dict],
+            save_path: str
         ):
         """
-        Given basic arguments, self.run iterates func_dicts and returns all metrics as results.
+        Given basic arguments, self.run iterates func_dicts and save all metrics as results.
         Args:
             num_classes (int): number of classes
             labels (List[np.ndarray]): length is the number of images. each numpy has shape (N, 5).
                 N is the number of ground truth, and 5 refers to (cid, xmin, ymin, xmax, ymax)
-            detections (List[np.ndarray]): length is the number of images. each numpy has shape (M, 5).
+            predictions (List[np.ndarray]): length is the number of images. each numpy has shape (M, 5).
                 M is the number of predictions, and 6 refers to (xmin, ymin, xmax, ymax, conf, cid)
             func_dicts (List[Dict]): length is the number of metrics function.
                 each dict has the format {"func_name": str, "args": Dict, "log_name": str}.
                 self.run saves the output in self.metrics, where log_name is key and output is value
+            save_path (str): path to save the result as json
         """
-        self.num_classes = num_classes
-        self.labels = labels
-        self.detections = detections
+        super().__init__(num_classes, labels, predictions, func_dicts, save_path)
+
         self.gt_class_cnts = self._get_gt_class_cnts(num_classes, labels)
-        self.func_dicts = func_dicts
         self.metrics = {}
 
     def _get_gt_class_cnts(self, num_classes: int, labels: List[np.ndarray]):
@@ -41,12 +76,6 @@ class DetectionMetricsPipeline:
             for i in range(len(label)):
                 gt_class_cnts[label[i][0]] += 1
         return gt_class_cnts
-
-    def run(self) -> Dict:
-        for func_dict in self.func_dicts:
-            self.metrics[func_dict["log_name"]] = \
-                getattr(self, func_dict["func_name"])(**func_dict["func_args"])
-        return self.metrics
 
     def get_pr_curves(self, k: int = 101) -> List[Dict[str, List[float]]]:
         pr_curves = [
@@ -61,13 +90,13 @@ class DetectionMetricsPipeline:
             confusion = np.zeros(
                 (self.num_classes + 1, self.num_classes + 1)
             )  # (i, j) = (pd, gt)
-            for label, detection in zip(self.labels, self.detections):
+            for label, predictions in zip(self.labels, self.predictions):
                 img_confusion = ConfusionMatrix(
                     self.num_classes,
                     CONF_THRESHOLD = threshold,
                     IOU_THRESHOLD = 0.5
                 )
-                img_confusion.process_batch(detection, label)
+                img_confusion.process_batch(predictions, label)
                 confusion += img_confusion.get_confusion()
             
             # update pr curve at the threshold from confusion
@@ -165,8 +194,9 @@ class DetectionMetricsPipeline:
             thresholds = np.linspace(0, 1, k_val)  # 101
             weighted_score = [0] * len(thresholds)
             for cid in range(num_classes):
-                for i, (precision, recall) in enumerate(zip(\
-                    pr_curves[cid]["precision"], pr_curves[cid]["recall"])):
+                for i, (precision, recall) in enumerate(
+                        zip(pr_curves[cid]["precision"], pr_curves[cid]["recall"])
+                    ):
                     score = score_func(precision, recall)
                     weighted_score[i] += score * self.gt_class_cnts[cid] / sum(self.gt_class_cnts)
             _, best_threshold = max(zip(weighted_score, thresholds))
@@ -188,13 +218,13 @@ class DetectionMetricsPipeline:
         """
         threshold = self.metrics[threshold_key] if threshold_key else threshold
         confusion = np.zeros((self.num_classes + 1, self.num_classes + 1))  # row: gt, col: pd
-        for labels, detections in zip(self.labels, self.detections):
+        for labels, predictions in zip(self.labels, self.predictions):
             cm = ConfusionMatrix(
                 self.num_classes,
                 CONF_THRESHOLD=threshold,
                 IOU_THRESHOLD=0.5
             )
-            cm.process_batch(detections, labels)
+            cm.process_batch(predictions, labels)
             confusion += cm.get_confusion()
         return confusion
     
@@ -217,14 +247,14 @@ class DetectionMetricsPipeline:
         confusion_with_img_indices = [
             [Counter() for _ in range(self.num_classes + 1)] for _ in range(self.num_classes + 1)
         ]
-        for img_idx, (labels, detections) in enumerate(zip(self.labels, self.detections)):
+        for img_idx, (labels, predictions) in enumerate(zip(self.labels, self.predictions)):
             cm = ConfusionMatrix(
                 self.num_classes,
                 CONF_THRESHOLD=threshold,
                 IOU_THRESHOLD=0.5,
                 img_idx=img_idx
             )
-            cm.process_batch(detections, labels)
+            cm.process_batch(predictions, labels)
             single_confusion_with_img_indices = cm.get_confusion_with_img_indices()
             for i in range(self.num_classes + 1):
                 for j in range(self.num_classes + 1):
