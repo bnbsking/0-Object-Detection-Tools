@@ -3,7 +3,7 @@
 ### **Introduction**
 This repo provides tools for common computer vision tasks.
 + Classification
-    + 
+    + Comprehensive `Metrics`
 + Object detection
     + `Format Conversion` between coco, voc, yolo and self-defined format [general](./example/detection/data/gt_and_pd.json).
     + `Visualization` of all the above formats for **labels** (and **predictions** if specified). The visualization tool automatically converts the data into general format in the cache directory in advance.
@@ -12,7 +12,8 @@ This repo provides tools for common computer vision tasks.
         + `Plotting` of the above metrics
         + `Export` data for label correctness
 + Segmentation
-    + 
+    + `Visualization`
+    + Comprehensive `Metrics`
 
 ### **Installation**
 ```bash

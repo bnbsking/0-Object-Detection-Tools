@@ -1,0 +1,89 @@
+metrics_pipeline:
+  name: ClassificationMetricsPipeline
+  func_dicts:
+    - log_name: &pr_curves pr_curves
+      func_name: get_pr_curves
+      func_args: {}
+
+    - log_name: &refine_pr_curves refine_pr_curves
+      func_name: get_refine_pr_curves
+      func_args:
+        pr_curves_key: *pr_curves
+
+    - log_name: &ap_list ap_list
+      func_name: get_ap_list
+      func_args:
+        refine_pr_curves_key: *refine_pr_curves
+
+    - log_name: &map map
+      func_name: get_map
+      func_args:
+        ap_list_key: *ap_list
+    
+    - log_name: &wmap wmap
+      func_name: get_wmap
+      func_args:
+        ap_list_key: *ap_list
+
+    - log_name: &best_threshold best_threshold
+      func_name: get_best_threshold
+      func_args:
+        strategy: f1
+        pr_curves_key: *pr_curves
+
+    - log_name: &confusion confusion
+      func_name: get_confusion
+      func_args:
+        threshold_key: *best_threshold
+
+    - log_name: &confusion_with_img_indices confusion_with_img_indices
+      func_name: get_confusion_with_img_indices
+      func_args:
+        threshold_key: *best_threshold
+    
+    - log_name: &confusion_col_norm confusion_col_norm
+      func_name: get_confusion_axis_norm
+      func_args:
+        confusion_key: *confusion
+        axis: 0
+    
+    - log_name: &confusion_row_norm confusion_row_norm
+      func_name: get_confusion_axis_norm
+      func_args:
+        confusion_key: *confusion
+        axis: 1
+
+
+plotting_pipeline:
+  name: PlottingPipeline
+  func_dicts:
+    - func_name: plot_aps
+      func_args:
+        ap_list: *ap_list
+        map: *map
+        wmap: *wmap
+
+    - func_name: plot_pr_curves
+      func_args:
+        refine_pr_curves: *refine_pr_curves
+    
+    - func_name: plot_prf_curves
+      func_args:
+        pr_curves: *pr_curves
+
+    - func_name: plot_confusion
+      func_args:
+        confusion: *confusion
+        confusion_col_norm: *confusion_col_norm
+        confusion_row_norm: *confusion_row_norm
+
+export_pipeline:
+  name: ExportDataPipeline
+  func_dicts:
+    - func_name: export_worst_acc_from_confusion
+      func_args:
+        confusion_with_img_indices: *confusion_with_img_indices
+    - func_name: export_all_wrong_from_confusion
+      func_args:
+        confusion_with_img_indices: *confusion_with_img_indices
+  

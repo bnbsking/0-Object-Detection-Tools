@@ -5,7 +5,7 @@
     ],
     "data": [
         {
-            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/Object-Detection-Tools/example/data/coco/pic0.jpg",
+            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/detection/data/coco/pic0.jpg",
             "img_width": 221,
             "img_height": 228,
             "gt_boxes": [
@@ -47,7 +47,7 @@
             ]
         },
         {
-            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/Object-Detection-Tools/example/data/coco/pic1.jpg",
+            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/detection/data/coco/pic1.jpg",
             "img_width": 1200,
             "img_height": 630,
             "gt_boxes": [
@@ -96,7 +96,7 @@
             ]
         },
         {
-            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/Object-Detection-Tools/example/data/coco/pic2.jpg",
+            "img_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/detection/data/coco/pic2.jpg",
             "img_width": 364,
             "img_height": 138,
             "gt_boxes": [

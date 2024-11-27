@@ -8,7 +8,7 @@ import yaml
 from .. import pipelines
 
 
-class DetectionAnalysis:
+class ClassificationAnalysis:
     def __init__(
             self,
             ant_path: str,
