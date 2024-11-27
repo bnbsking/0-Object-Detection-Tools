@@ -1,6 +1,4 @@
 **/__pycache__/
 **/.ipynb_checkpoints/
 
-example/output/
-
-#_deprecate/*
+example/*/output/

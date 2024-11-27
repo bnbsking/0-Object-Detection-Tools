@@ -1,75 +1,91 @@
-### Introduction
-This repo integrates the common useful tools for object detection.
+# COSMOs: Classification, Object detection, Segmentation MOduleS
 
-### Quickstart
-+  Visualization
-    ```python
-    import visualization as vis
+### **Introduction**
+This repo provides tools for common computer vision tasks.
++ Classification
+    + 
++ Object detection
+    + `Format Conversion` between coco, voc, yolo and self-defined format [general](./example/detection/data/gt_and_pd.json).
+    + `Visualization` of all the above formats for **labels** (and **predictions** if specified). The visualization tool automatically converts the data into general format in the cache directory in advance.
+    + `Output Analysis`
+        + Comprehensive `metrics` e.g. AP, PR-Curves, Confusion matrices, threshold optimization, etc.
+        + `Plotting` of the above metrics
+        + `Export` data for label correctness
++ Segmentation
+    + 
 
-    # args of vis.show
-    # 1 class_list: list[str].
-    # 2 img_path: str.
-    # 3 ant_path: str or None.
-    # 4 pd_boxes_type: '' or 'voc' or 'yolo' or 'yolo_int' or 'coco'
-    # 5 pd_boxes: ndarray in shape (N,4) coco/voc/yolo
-    # 6 pd_cids: ndarray in shape (N,) class index
-    # 7 pd_cfs: ndarray in shape (N,) confidence
+### **Installation**
+```bash
+git clone https://github.com/bnbsking/COSMOs
+pip install numpy matplotlib opencv-python
+```
 
-    # show img with coco annotation and coco prediction
-    vis.show(["dog","cat"], f"data/coco/pic0.jpg", "data/coco/coco.json", "coco", pd_boxes, pd_cids, pd_cfs)
+### **Quick start - Object detection**
++ Format Conversion (see more in the [example](./example/detection/s2_format_conversion.ipynb))
 
-    # show img with voc annotation and voc prediction
-    vis.show(["dog","cat"], f"data/voc/pic0.jpg", "data/voc/pic0.xml", "voc", pd_boxes, pd_cids, pd_cfs)
+```python
+from cosmos.detection import coco2any
 
-    # show img with coco annotation and coco prediction
-    vis.show(["dog","cat"], f"data/coco/pic0.jpg", "data/yolo/pic0.txt", "yolo", pd_boxes, pd_cids, pd_cfs)
-    ```
-    See more details and examples in `visualization/`
+coco2any(
+    tgt_foramt = "voc",
+    img_folder = "example/detection/data/coco",
+    ant_path = "example/detection/data/coco/coco.json",
+    save_folder = "example/detection/output/visualization_gt_conversion/coco2voc"
+)
+```
 
-+ Format Conversion
-    ```bash
-    cd format_conversion
-    ```
-    ```python
-    import os
-    
-    import convert
-    
-    # convert voc to yolo
-    os.makedirs("output/voc2yolo", exist_ok=True)
-    convert.voc2yolo("data/voc", "output/voc2yolo", ['dog', 'cat'])
-    
-    # convert voc to coco
-    os.makedirs("output/voc2coco", exist_ok=True)
-    convert.voc2coco("data/voc", "output/voc2coco/coco.json", ['dog', 'cat'])
+or 
 
-    # convert yolo to voc
-    os.makedirs("output/yolo2voc", exist_ok=True)
-    convert.yolo2voc("data/yolo", "output/yolo2voc", ['dog', 'cat'])
+```python
+from cosmos.detection import coco2general
 
-    # convert yolo to coco
-    os.makedirs("output/yolo2coco", exist_ok=True)
-    convert.yolo2coco("data/yolo", f"output/yolo2coco/coco.json", ['dog','cat'])
+coco2general(
+    img_folder = "example/detection/data/coco",
+    ant_path = "example/detection/data/coco/coco.json",
+    save_path = "example/detection/output/visualization_gt_conversion/coco2general/general.json"
+)
+```
 
-    # convert coco to voc
-    os.makedirs("output/coco2voc", exist_ok=True)
-    convert.coco2voc("data/coco/coco.json", "output/coco2voc")
++ Visualization (see more in the [example](./example/detection/s1_visualization_gt_and_pd.ipynb))
 
-    # convert coco to yolo
-    os.makedirs("output/coco2yolo", exist_ok=True)
-    convert.coco2yolo("data/coco/coco.json", "output/coco2yolo")
-    ```
-    See more details and examples in `format_conversion/`
+```python
+from cosmos.detection import show_coco
 
-### Output examples
+show_coco(
+    img_name = f"pic0.jpg",
+    img_folder = "example/detection/data/coco",
+    ant_path = "example/detection/data/coco/coco.json"
+)
+```
 
-+ Visualization
-![a](visualization/example.jpg)
+or
 
+```python
+from cosmos.detection import show_general
 
+show_general(
+    img_name = f"pic0.jpg",
+    ant_path = "example/detection/data/gt_and_pd.json",
+)  # when the anntotation includes predictions it will be shown!
+```
 
++ Output Analysis
+```python
+from cosmos.detection import DetectionAnalysis
 
-### 
-Voc + prediction.json -> general.json -> Voc
-Coco + prediction.json
+DetectionAnalysis(
+    ant_path = f"example/detection/data/gt_and_pd.json",
+    save_folder = f"example/detection/output/metrics"
+)
+```
 
+### **Concepts**
++ Inconvenient formats in object detection
+
+The formats can be summarized as following:
+| format | extension | files     | type  | box                      | disadvantage |
+| -      | -         | -         | -     | -                        | -            |
+| coco   | .json     | 1         | int   | (xmin, ymin, w, h)       | get label of an image |
+| yolo   | .txt      | len(imgs) | float | (cx, cy, w/2, h/2)       | visualization, compute metrics, etc. |
+| voc    | .xml      | len(imgs) | int   | (xmin, ymin, xmax, ymax) | get class list |
+| [general](./example/detection/data/gt_and_pd.json)| .json | 1 | int | (xmin, ymin, w, h) | **NO** |
