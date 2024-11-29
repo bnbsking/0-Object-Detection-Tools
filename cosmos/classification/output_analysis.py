@@ -1,11 +1,11 @@
 import json
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import yaml
 
-from .. import pipelines
+from ..utils import pipelines
 
 
 class ClassificationAnalysis:
@@ -13,15 +13,21 @@ class ClassificationAnalysis:
             self,
             ant_path: str,
             save_folder: str,
-            pipeline_cfg_path: Optional[str] = None
+            pipeline_cfg_path: Optional[str] = None,
+            compute_last_cls: bool
         ):
+        """
+        Notes:
+            If there is background class, it must be the last category.
+            `num_classes` includes the background class
+        """
         # initialization
         general = json.load(open(ant_path, "r", encoding="utf-8"))
         class_list = general["categories"]
         num_classes = len(general["categories"])
         labels = self.get_labels(general["data"])
         predictions = self.get_predictions(general["data"])
-        img_path_list = self.get_img_path_list(general["data"])
+        data_path_list = self.get_data_path_list(general["data"])
         pipeline_cfg = self.get_pipeline_cfg(pipeline_cfg_path)
 
         # metrics pipeline
@@ -61,28 +67,18 @@ class ClassificationAnalysis:
         )
         export_pipeline.run()
 
-    def get_labels(self, data_dict_list: List[Dict]) -> List[np.ndarray]:
-        labels = []
-        for data_dict in data_dict_list:
-            img_label = []
-            for cid, (xmin, ymin, xmax, ymax) in zip(data_dict["gt_cls"], data_dict["gt_boxes"]):
-                img_label.append([cid, xmin, ymin, xmax, ymax])
-            labels.append(np.array(img_label))
-        return labels
+    def get_labels(self, data_dict_list: List[Dict]) -> Union[List[int], List[List[int]]]:
+        return [data_dict["gt_cls"] for data_dict in data_dict_list]
 
-    def get_predictions(self, data_dict_list: List[Dict]) -> List[np.ndarray]:
-        predictions = []
-        for data_dict in data_dict_list:
-            img_detect = []
-            for probs, (xmin, ymin, xmax, ymax) in zip(data_dict["pd_probs"], data_dict["pd_boxes"]):
-                conf = max(probs)
-                cid = probs.index(conf)
-                img_detect.append([xmin, ymin, xmax, ymax, conf, cid])
-            predictions.append(np.array(img_detect))
-        return predictions
+    def get_predictions(self, data_dict_list: List[Dict]) -> np.ndarray:
+        """
+        Returns:
+            prediction (np.ndarray): shape=(data, num_classes) or (data, multi-label-dim, 2)
+        """
+        return np.array([data_dict["pd_probs"] for data_dict in data_dict_list])
     
-    def get_img_path_list(self, data_dict_list: List[Dict]) -> List[str]:
-        return [data_dict["img_path"] for data_dict in data_dict_list]
+    def get_data_path_list(self, data_dict_list: List[Dict]) -> List[str]:
+        return [data_dict["data_path"] for data_dict in data_dict_list]
 
     def get_pipeline_cfg(self, pipeline_cfg_path: Optional[str] = None) -> Dict:
         if pipeline_cfg_path is None:

@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import yaml
 
-from .. import pipelines
+from ..utils import pipelines
 
 
 class DetectionAnalysis:

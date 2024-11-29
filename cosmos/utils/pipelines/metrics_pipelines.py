@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .detection_confusion_matrix import ConfusionMatrix
+from ..detection.detection_confusion_matrix import ConfusionMatrix
 
 
 class BaseMetricsPipeline:
@@ -41,7 +41,7 @@ class BaseMetricsPipeline:
         with open(self.save_path, "w") as f:
             json.dump(self._deserialize(self.metrics), f, indent=4)
         return self.metrics
-    
+
 
 class DetectionMetricsPipeline(BaseMetricsPipeline):
     def __init__(

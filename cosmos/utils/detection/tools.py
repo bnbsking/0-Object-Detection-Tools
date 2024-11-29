@@ -2,7 +2,7 @@ from typing import Literal
 
 import numpy as np
 
-from ..format_conversion import BoxConvert
+from ...detection.format_conversion import BoxConvert
 
 
 def get_iou(xmin1: int, ymin1: int, xmax1: int, ymax1: int, xmin2: int, ymin2: int, xmax2: int, ymax2: int) -> float:
