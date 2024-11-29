@@ -69,7 +69,9 @@ class PlottingPipeline:
             confusion_row_norm: np.ndarray
         ):
         num_classes = len(confusion)
-        if num_classes > len(self.class_list):
+        if num_classes == len(self.class_list):
+            class_list = self.class_list
+        else:
             class_list = ["BG"] + self.class_list
         matrix_plot_list = [confusion_col_norm, confusion_col_norm, confusion_row_norm]
         matrix_text_list = [confusion, confusion_col_norm, confusion_row_norm]

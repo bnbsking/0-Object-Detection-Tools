@@ -2,8 +2,9 @@ from abc import abstractmethod
 from collections import Counter
 import copy
 import json
+import os
 from tqdm import tqdm
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Union
 
 import numpy as np
 from sklearn import metrics as skm
@@ -19,14 +20,12 @@ class BaseMetricsPipeline:
             predictions: List,
             func_dicts: List[Dict],
             save_path: str,
-            start_idx: int = 0
         ):
         self.num_classes = num_classes
         self.labels = labels
         self.predictions = predictions
         self.func_dicts = func_dicts
         self.save_path = save_path
-        self.start_idx = start_idx
 
         self.metrics = {}
     
@@ -42,6 +41,7 @@ class BaseMetricsPipeline:
         for func_dict in self.func_dicts:
             self.metrics[func_dict["log_name"]] = \
                 getattr(self, func_dict["func_name"])(**func_dict["func_args"])
+        os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
         with open(self.save_path, "w") as f:
             json.dump(self._deserialize(self.metrics), f, indent=4)
         return self.metrics
@@ -64,7 +64,7 @@ class CommonMetricsPipeline(BaseMetricsPipeline):
                         "precision": [0.] * k,
                         "recall": [0.] * k,
                     } for _ in range(n)
-                ]  # n = self.num_classses - self.start_idx
+                ]  # n = self.num_classses or self.num_classes - 1
         """
         raise NotImplementedError
 
@@ -138,6 +138,8 @@ class CommonMetricsPipeline(BaseMetricsPipeline):
             best_threshold (float)
         Dependency:
             you must call self.get_pr_curves in advance
+        Notes:
+            For classification does not have background, the return value is meaningless
         """
         if strategy in {"f1", "precision"}:
             if strategy == "f1":
@@ -160,6 +162,8 @@ class CommonMetricsPipeline(BaseMetricsPipeline):
                     weighted_score[j] += score * self.gt_class_cnts[i] / sum(self.gt_class_cnts)
             _, best_threshold = max(zip(weighted_score, thresholds))
             return best_threshold
+        else:
+            return 0.5
 
     @abstractmethod
     def get_confusion(
@@ -191,9 +195,9 @@ class CommonMetricsPipeline(BaseMetricsPipeline):
         axis_sum = confusion_axis_norm.sum(axis=axis)
         for i in range(len(confusion_axis_norm)):
             if axis == 0:
-                confusion_axis_norm[:, i] /= axis_sum[i]
+                confusion_axis_norm[:, i] /= (axis_sum[i] + 1e-10)
             elif axis == 1:
-                confusion_axis_norm[i, :] /= axis_sum[i]
+                confusion_axis_norm[i, :] /= (axis_sum[i] + 1e-10)
         return confusion_axis_norm
 
 
@@ -204,32 +208,35 @@ class ClassificationMetricsPipeline(CommonMetricsPipeline):
             labels: Union[List[int], List[List[int]]],
             predictions: np.ndarray,
             func_dicts: List[Dict],
-            save_path: str
+            save_path: str,
+            start_idx: int
         ):
         """
         Given basic arguments, self.run iterates func_dicts and save all metrics as results.
         Args:
-            num_classes (int): number of classes (exclude background).
-            labels (List[int] single label, List[List[int]] multi label): length is the number of images.
+            num_classes (int): number of classes (includes background if exist).
+            labels (np.ndarray):
+                For single label, shape=(data,)
+                For multi label, shape=(data, multi-label-dim).
             predictions (np.ndarray):
-                For single label, shape=(data, num_classes). If background class exist: shape=(data, num_classes+1)
-                For multi label, shape=(data, multi-label-dim, 2). The last axis dim-0 is background. 
+                For single label, shape=(data, num_classes). If background exist, it must be zeroth category. 
+                For multi label, shape=(data, multi-label-dim, 2)
             func_dicts (List[Dict]): length is the number of metrics function.
                 each dict has the format {"func_name": str, "args": Dict, "log_name": str}.
                 self.run saves the output in self.metrics, where log_name is key and output is value
             save_path (str): path to save the result as json
-            compute_last_cls (bool): if there is background class, whether to compute that class.
+            start_idx (int): be 0 or 1 (has background)
         """
         super().__init__(num_classes, labels, predictions, func_dicts, save_path)
-        self.single_label = isinstance(labels[0], list)
-        self.add_background = self.single_label and num_classes < predictions.shape[1]
+        self.single_label = len(labels.shape) == 1
+        self.start_idx = self.single_label and start_idx
         self.gt_class_cnts = self._get_gt_class_cnts()
 
     def _get_gt_class_cnts(self) -> List[int]:
-        gt_class_cnts = [0] * self.num_classes
+        gt_class_cnts = [0] * (self.num_classes - self.start_idx)
         if self.single_label:
             for label in self.labels:
-                gt_class_cnts[label] += 1
+                gt_class_cnts[label - self.start_idx] += 1
         else:
             for label_list in self.labels:  # multilabel returns positive count only
                 for cls_idx, is_positive in enumerate(label_list):
@@ -241,28 +248,101 @@ class ClassificationMetricsPipeline(CommonMetricsPipeline):
             {
                 "precision": [0.] * k,
                 "recall": [0.] * k,
-            } for _ in range(self.num_classes)
+            } for _ in range(self.num_classes - self.start_idx)
         ]
 
-        # for threshold in np.linspace(0, 1, k):
-        #     if self.num_classes == 1:  # binary
-        #         pd_cls = self.predictions[:, 1] >= threshold
-        #         precision = skm.precision_score(self.labels, pd_cls)
-        #         recall = skm.recall_score(self.labels, pd_cls)
-        #     elif self.single_label:
-        #         for 
-        #             pd_cls = self.predictions[:, i] >= threshold
-
-        # elif self.single_label:  # multiclass
-        #     self.pd_cls = self.predictions.argmax(axis=-1)
-        #     precision = skm.precision_score(self.labels, self.pd_cls)
-        #     recall = 
-
-        #     for cid in range(self.num_classes):
-        #         pr_curves[cid]["precision"][i] = confusion[cid][cid] / col_sum[cid] if col_sum[cid] else 0
-        #         pr_curves[cid]["recall"][i] = confusion[cid][cid] / row_sum[cid] if row_sum[cid] else 0
+        for i, threshold in enumerate(np.linspace(0, 1, k)):
+            for j in range(self.start_idx, self.num_classes):
+                if self.single_label:
+                    gt_cls = self.labels
+                    pd_cls = (self.predictions[:, j] >= threshold).astype(np.int32)
+                else:
+                    gt_cls = self.labels[:, j]
+                    pd_cls = (self.predictions[:, j, 1] >= threshold).astype(np.int32)
+                precision = skm.precision_score(gt_cls, pd_cls, zero_division=0.0)
+                recall = skm.recall_score(gt_cls, pd_cls, zero_division=0.0)
+                pr_curves[j - self.start_idx]["precision"][i] = precision
+                pr_curves[j - self.start_idx]["recall"][i] = recall
 
         return pr_curves
+    
+    def get_confusion(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> np.ndarray:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion (np.ndarray[int]): shape=(num_classes, num_classes).
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        Notes:
+            For multi-class classification does not have background, threshold is meaningless.
+        """
+        if self.single_label and self.start_idx==0 and self.num_classes > 2:  # multiclass without background
+            gt_cls = self.labels
+            pd_cls = self.predictions.argmax(axis=1)
+        elif self.single_label:  # binary or multiclass with background
+            threshold = self.metrics[threshold_key] if threshold_key else threshold
+            gt_cls = self.labels
+            pd_cls = np.where(
+                    self.predictions[:, 0] < threshold,
+                    0,
+                    self.predictions[:, 1:].argmax(axis=1) + 1
+                )
+        else:  # multilabel
+            threshold = self.metrics[threshold_key] if threshold_key else threshold
+            gt_cls = self.labels.reshape(-1)
+            pd_cls = (self.predictions[:, :, 1] >= threshold).reshape(-1).astype(np.int32)
+        
+        confusion = np.zeros((self.num_classes, self.num_classes))
+        for gtc, pdc in zip(gt_cls, pd_cls):
+            confusion[gtc][pdc] += 1
+        return confusion
+
+    def get_confusion_with_img_indices(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> List[List[Counter[int, int]]]:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion_with_img_indices (List[List[Counter[int, int]]]):
+                shape=(num_classes, num_classes). each grid is counter of image indices
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        Notes:
+            For multi-class classification does not have background, threshold is meaningless.
+        """
+        if self.single_label and self.start_idx==0 and self.num_classes > 2:  # multiclass without background
+            gt_cls = self.labels
+            pd_cls = self.predictions.argmax(axis=1)
+        elif self.single_label:  # binary or multiclass with background
+            threshold = self.metrics[threshold_key] if threshold_key else threshold
+            gt_cls = self.labels
+            pd_cls = np.where(
+                    self.predictions[:, 0] > threshold,
+                    0,
+                    self.predictions[:, 1:].argmax(axis=1) + 1
+                )
+        else:  # multilabel
+            threshold = self.metrics[threshold_key] if threshold_key else threshold
+            gt_cls = self.labels.reshape(-1)
+            pd_cls = (self.predictions[:, :, 1] >= threshold).reshape(-1).astype(np.int32)
+        
+        confusion_with_img_indices = [
+            [Counter() for _ in range(self.num_classes)] for _ in range(self.num_classes)
+        ]
+        dataset_length = len(self.labels)
+        for idx, (gtc, pdc) in enumerate(zip(gt_cls, pd_cls)):
+            confusion_with_img_indices[gtc][pdc][idx % dataset_length] += 1
+        return confusion_with_img_indices
 
 
 class DetectionMetricsPipeline(CommonMetricsPipeline):

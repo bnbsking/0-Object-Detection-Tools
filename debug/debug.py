@@ -6,9 +6,15 @@ from cosmos.classification import ClassificationAnalysis
 from cosmos.detection import DetectionAnalysis
 
 
-DetectionAnalysis(
-    ant_path = f"{ROOT}/example/detection/data/general.json",
-    save_folder = f"{ROOT}/example/detection/output/metrics"
+# DetectionAnalysis(
+#     ant_path = f"{ROOT}/example/detection/data/general.json",
+#     save_folder = f"{ROOT}/example/detection/output/metrics"
+# )
+
+
+ClassificationAnalysis(
+    ant_path = f"{ROOT}/example/classification/data/single_label_background.json",
+    save_folder = f"{ROOT}/example/classification/output/single_label_background",
 )
 
 
