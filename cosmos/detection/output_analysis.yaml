@@ -1,5 +1,5 @@
 metrics_pipeline:
-  name: ClassificationMetricsPipeline
+  name: DetectionMetricsPipeline
   func_dicts:
     - log_name: &pr_curves pr_curves
       func_name: get_pr_curves

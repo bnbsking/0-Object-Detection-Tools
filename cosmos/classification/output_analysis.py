@@ -13,13 +13,10 @@ class ClassificationAnalysis:
             self,
             ant_path: str,
             save_folder: str,
-            pipeline_cfg_path: Optional[str] = None,
-            compute_last_cls: bool
+            pipeline_cfg_path: Optional[str] = None
         ):
         """
-        Notes:
-            If there is background class, it must be the last category.
-            `num_classes` includes the background class
+        For single label classification, if there is background: categories and num_classes exclude it.
         """
         # initialization
         general = json.load(open(ant_path, "r", encoding="utf-8"))

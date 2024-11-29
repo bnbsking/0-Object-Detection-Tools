@@ -9,13 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-if True:
-    colors = [ (1,0,0), (0,1,0), (0,0,1), (1,1,0), (0,1,1) ]
-else:
-    colors = set()
-    while len(colors)<90:
-        colors.add( tuple([round(random.random(),2) for i in range(3)]) )
-    colors = list(colors)
+colors = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1)]  # background first
 
 
 def import_method_from_module(
@@ -72,7 +66,7 @@ def get_img(digit: int, color = (1,1,1)):
     return stroke(patch, seven_segment_display[digit], color)
 
 
-def get_patch(unit_digit: int, tens_digit: int, color = (1,1,1)):
+def get_patch(unit_digit: int, tens_digit: int, color = (1, 1, 1)):
     A = np.array([[color for _ in range(60)] for _ in range(30)]).astype(float)
     A[:, :20, :] = get_img(unit_digit, color)
     A[:, 20:40, :] = get_img(tens_digit, color)
@@ -87,8 +81,8 @@ def show(
         box_width: int = 4,
         value_ratios: Tuple[int, int] = (1,1)
     ):
-    
-    img_raw = cv2.imread(data_dict["img_path"])[:,:,::-1]/255
+    class_list.pop(0) if class_list[0] == "__background__" else None
+    img_raw = cv2.imread(data_dict["img_path"])[:, :, ::-1]/255
 
     # ground truth
     img_gt = img_raw.copy()
@@ -154,7 +148,8 @@ def show(
     plt.tick_params(axis='both', which='major', labelsize=16)
     plt.imshow(img_pd)
     
-    plt.savefig(save_path) if save_path else plt.show()
+    plt.show()
+    plt.savefig(save_path) if save_path else None
     plt.close()
 
 
@@ -178,7 +173,7 @@ def show_coco(
         img_name: str,
         img_folder: str,
         ant_path: str,
-        save_folder: Optional[str] = None,
+        save_folder: str = ".tmp",
         use_cache: bool = True,
     ):
     """
@@ -192,15 +187,12 @@ def show_coco(
         use_cache (bool, optional): if true, the conversion execute once only.
     """
     coco2general = import_method_from_module("coco2general")
-    no_save_final = save_folder is None
-    if no_save_final:
-        save_folder = os.path.abspath("example/output/visualization_gt_and_pd/coco")
     
     general_path = os.path.join(save_folder, ".tmp_general.json")
     if not use_cache or not os.path.exists(general_path):
         coco2general(img_folder, ant_path, general_path)
+    save_path = os.path.join(save_folder, img_name)
     
-    save_path = None if no_save_final else os.path.join(save_folder, img_name)
     show_general(img_name, general_path, save_path)
 
 
@@ -209,7 +201,7 @@ def show_voc(
         img_path_list: List[str],
         ant_path_list: List[str],
         class_list: List[str],
-        save_folder: Optional[str] = None,
+        save_folder: str = ".tmp",
         use_cache: bool = True,
     ):
     """
@@ -224,15 +216,12 @@ def show_voc(
         use_cache (bool, optional): if true, the conversion execute once only.
     """
     voc2general = import_method_from_module("voc2general")
-    no_save_final = save_folder is None
-    if no_save_final:
-        save_folder = os.path.abspath("example/output/visualization_gt_and_pd/voc")
     
     general_path = os.path.join(save_folder, ".tmp_general.json")
     if not use_cache or not os.path.exists(general_path):
         voc2general(img_path_list, ant_path_list, class_list, general_path)
-    
-    save_path = None if no_save_final else os.path.join(save_folder, img_name)
+    save_path = os.path.join(save_folder, img_name)
+
     show_general(img_name, general_path, save_path)
 
 
@@ -241,7 +230,7 @@ def show_yolo(
         img_path_list: List[str],
         ant_path_list: List[str],
         class_list: List[str],
-        save_folder: Optional[str] = None,
+        save_folder: str = ".tmp",
         use_cache: bool = True,
     ):
     """
@@ -256,13 +245,10 @@ def show_yolo(
         use_cache (bool, optional): if true, the conversion execute once only.
     """
     yolo2general = import_method_from_module("yolo2general")
-    no_save_final = save_folder is None
-    if no_save_final:
-        save_folder = os.path.abspath("example/output/visualization_gt_and_pd/yolo")
     
     general_path = os.path.join(save_folder, ".tmp_general.json")
     if not use_cache or not os.path.exists(general_path):
         yolo2general(img_path_list, ant_path_list, class_list, general_path)
-    
-    save_path = None if no_save_final else os.path.join(save_folder, img_name)
+    save_path = os.path.join(save_folder, img_name)
+
     show_general(img_name, general_path, save_path)

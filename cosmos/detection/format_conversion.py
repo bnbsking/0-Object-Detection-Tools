@@ -110,6 +110,7 @@ class FormatConvertAny2General:
         """
         # initialization
         out = {"categories": class_list, "data": []}
+        class_list.insert(0, "__background__") if class_list[0] != "__background__" else None
 
         for img_path, ant_path in tqdm(zip(img_path_list, ant_path_list)):
             # extract
@@ -151,6 +152,7 @@ class FormatConvertAny2General:
             ant_path_list: List[str],
             class_list: List[str],
             save_path: str,
+            cat_index_start: int = 0
         ):
         """
         Convert label from yolo to general format.
@@ -159,9 +161,13 @@ class FormatConvertAny2General:
             ant_path_list (List[str]): list of annotation path of the dataset
             class_list (List[str]): list of class name
             save_path (str): target save path
+            index_start (int): category index start from
+        Notes:
+            yolo class index usually starts from 0, this function will shift to 1.
         """
         # initialization
         out = {"categories": class_list, "data": []}
+        class_list.insert(0, "__background__") if class_list[0] != "__background__" else None
 
         for img_path, ant_path in tqdm(zip(img_path_list, ant_path_list)):
             # extract
@@ -176,7 +182,7 @@ class FormatConvertAny2General:
                 cid, cx, cy, w, h = txt_line.split(" ")
                 xmin, ymin, xmax, ymax = BoxConvert.any2voc("yolo", cx, cy, w, h, img_width, img_height)
                 gt_boxes.append([int(xmin), int(ymin), int(xmax), int(ymax)])
-                gt_cls.append(int(cid))
+                gt_cls.append(int(cid) - cat_index_start + 1)
 
             # collect
             out["data"].append(
@@ -199,6 +205,7 @@ class FormatConvertAny2General:
             img_folder: str,
             ant_path: str,
             save_path: str,
+            cat_index_start: int = 1
         ):
         """
         Convert label from coco to general format.
@@ -206,11 +213,13 @@ class FormatConvertAny2General:
             img_folder (str): source folder of the images
             ant_path (str): source path of the label
             save_path (str): target save path
+        Notes:
+            coco class index usually starts from 1, this function remains.
         """
         # initialization
         with open(ant_path, "r", encoding="utf-8") as f:
             coco = json.load(f)
-            class_list = ["empty"] * (max(int(cat_dict["id"]) for cat_dict in coco['categories']) + 1)
+            class_list = ["__background__"] * (max(int(cat_dict["id"]) for cat_dict in coco['categories']) + 1)
             for cat_dict in coco['categories']:
                 class_list[cat_dict["id"]] = cat_dict["name"]
         out = {"categories": class_list, "data": []}
@@ -226,7 +235,7 @@ class FormatConvertAny2General:
                 xmin, ymin, w, h = ant_dict['bbox']
                 xmin, ymin, xmax, ymax = BoxConvert.any2voc("coco", xmin, ymin, w, h)
                 gt_boxes.append([int(xmin), int(ymin), int(xmax), int(ymax)])
-                gt_cls.append(int(ant_dict['category_id']))
+                gt_cls.append(int(ant_dict['category_id']) - cat_index_start + 1)
             
             # collect
             out["data"].append(
@@ -275,7 +284,7 @@ class FormatConvertGeneral2Any:
                 f.write(out)
             shutil.copy(data_dict["img_path"], save_folder)
 
-    def general2yolo(ant_path: str, save_folder: str):
+    def general2yolo(ant_path: str, save_folder: str, cat_index_start: int = 0):
         # initialization
         with open(ant_path, "r", encoding="utf-8") as f:
             general = json.load(f)
@@ -292,17 +301,18 @@ class FormatConvertGeneral2Any:
             out = ""
             for (xmin, ymin, xmax, ymax), gt_cls in zip(data_dict["gt_boxes"], data_dict["gt_cls"]):
                 cx, cy, w, h = BoxConvert.voc2any("yolo", xmin, ymin, xmax, ymax, width, height)
-                out += f"{gt_cls} {pad(cx)} {pad(cy)} {pad(w)} {pad(h)}\n"
+                out += f"{gt_cls - 1 + cat_index_start} {pad(cx)} {pad(cy)} {pad(w)} {pad(h)}\n"
 
             # save
             save_path = os.path.join(save_folder, f"{filename.split('.')[0]}.txt")
             with open(save_path, "w", encoding="utf-8") as f:
                 f.write(out)
-            with open(os.path.join(save_folder, "classes.txt"), "w", encoding="utf-8") as f:
-                f.write("\n".join(categories))
             shutil.copy(data_dict["img_path"], save_folder)
+        
+        with open(os.path.join(save_folder, "classes.txt"), "w", encoding="utf-8") as f:
+            f.write("\n".join(categories[1:]))
 
-    def general2coco(ant_path: str, save_folder: str):
+    def general2coco(ant_path: str, save_folder: str, cat_index_start: int = 1):
         # initialization
         with open(ant_path, "r", encoding="utf-8") as f:
             general = json.load(f)
@@ -316,7 +326,7 @@ class FormatConvertGeneral2Any:
                     "supercategory": "none",
                     "id": i,
                     "name": class_name
-                } for i, class_name in enumerate(categories)
+                } for i, class_name in enumerate(categories, cat_index_start)
             ]
         }
         
@@ -338,7 +348,7 @@ class FormatConvertGeneral2Any:
                         "area": w * h,
                         "iscrowd": 0,
                         "bbox": [xmin, ymin, w, h],
-                        "category_id": gt_cls,
+                        "category_id": gt_cls - 1 + cat_index_start,
                         "ignore": 0,
                         "segmentation": [],
                         "image_id": img_id,

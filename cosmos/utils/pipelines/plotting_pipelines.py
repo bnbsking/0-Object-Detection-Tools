@@ -68,7 +68,9 @@ class PlottingPipeline:
             confusion_col_norm: np.ndarray,
             confusion_row_norm: np.ndarray
         ):
-        num_classes = len(self.class_list)
+        num_classes = len(confusion)
+        if num_classes > len(self.class_list):
+            class_list = ["BG"] + self.class_list
         matrix_plot_list = [confusion_col_norm, confusion_col_norm, confusion_row_norm]
         matrix_text_list = [confusion, confusion_col_norm, confusion_row_norm]
         title_list = ["confusion", "col norm (precision)", "row norm (recall)"]
@@ -80,13 +82,13 @@ class PlottingPipeline:
             plt.title(title, fontsize=12)
             plt.xlabel("PD", fontsize=12)
             plt.ylabel("GT", fontsize=12)
-            fig.set_xticks(np.arange(num_classes + 1)) # values
-            fig.set_xticklabels(self.class_list + ['BG'])  # labels
-            fig.set_yticks(np.arange(num_classes + 1))  # values
-            fig.set_yticklabels(self.class_list + ['BG'])  # labels
+            fig.set_xticks(np.arange(num_classes)) # values
+            fig.set_xticklabels(class_list)  # labels
+            fig.set_yticks(np.arange(num_classes))  # values
+            fig.set_yticklabels(class_list)  # labels
             plt.imshow(matplt, cmap=mpl.cm.Blues, interpolation='nearest', vmin=0, vmax=1)
-            for i in range(num_classes + 1):
-                for j in range(num_classes + 1):
+            for i in range(num_classes):
+                for j in range(num_classes):
                     plt.text(j, i, round(mattxt[i][j], 2), ha="center", va="center", \
                         color="black" if matplt[i][j]<0.9 else "white", fontsize=12)
         plt.savefig(os.path.join(self.save_folder, "confusion.jpg"))

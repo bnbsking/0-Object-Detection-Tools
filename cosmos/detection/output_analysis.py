@@ -42,7 +42,7 @@ class DetectionAnalysis:
             func_dicts = pipeline_cfg["plotting_pipeline"]["func_dicts"],
         )
         plotting_pipeline = plotting_pipeline_cls(
-            class_list = class_list,
+            class_list = class_list[1:],
             func_dicts = func_dicts,
             save_folder = save_folder
         )

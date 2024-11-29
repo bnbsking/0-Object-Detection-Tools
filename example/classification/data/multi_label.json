@@ -1,0 +1,59 @@
+{
+    "categories": [
+        "dog",
+        "cat"
+    ],
+    "data": [
+        {
+            "data_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/classification/data/pic0.jpg",
+            "gt_cls": [
+                1,
+                0
+            ],
+            "pd_probs": [
+                [
+                    0.05,
+                    0.95
+                ],
+                [
+                    0.8,
+                    0.2
+                ]
+            ]
+        },
+        {
+            "data_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/classification/data/pic1.jpg",
+            "gt_cls": [
+                1,
+                1
+            ],
+            "pd_probs": [
+                [
+                    0.7,
+                    0.3
+                ],
+                [
+                    0.15,
+                    0.85
+                ]
+            ]
+        },
+        {
+            "data_path": "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/classification/data/pic2.jpg",
+            "gt_cls": [
+                1,
+                1
+            ],
+            "pd_probs": [
+                [
+                    0.4,
+                    0.6
+                ],
+                [
+                    0.25,
+                    0.75
+                ]
+            ]
+        }
+    ]
+}

@@ -35,16 +35,15 @@ def box_iou_calc(boxes1, boxes2):
 class ConfusionMatrix:
     def __init__(
             self,
-            num_classes: int,
+            num_classes: int,  # includes background
             CONF_THRESHOLD: float = 0.3,
             IOU_THRESHOLD: float = 0.5,
             img_idx: Optional[int] = None,
         ):
-        self.confusion = np.zeros((num_classes + 1, num_classes + 1))
+        self.confusion = np.zeros((num_classes, num_classes))
         self.confusion_with_img_indices = [
-            [Counter() for _ in range(num_classes+1)] for _ in range(num_classes+1)
+            [Counter() for _ in range(num_classes)] for _ in range(num_classes)
         ]
-        self.num_classes = num_classes
         self.CONF_THRESHOLD = CONF_THRESHOLD
         self.IOU_THRESHOLD = IOU_THRESHOLD
         self.img_idx = img_idx
@@ -67,7 +66,7 @@ class ConfusionMatrix:
             # detections are empty, end of process
             for i in range(len(labels)):
                 gt_class = gt_classes[i]
-                self.confusion[gt_class, self.num_classes] += 1
+                self.confusion[gt_class, 0] += 1
             return
 
         detection_classes = detections[:, 5].astype(np.int16)
@@ -96,16 +95,16 @@ class ConfusionMatrix:
                 if self.img_idx is not None:
                     self.confusion_with_img_indices[gt_class][detection_class][self.img_idx] += 1  #
             else:
-                self.confusion[gt_class, self.num_classes] += 1
+                self.confusion[gt_class, 0] += 1
                 if self.img_idx is not None:
-                    self.confusion_with_img_indices[gt_class][self.num_classes][self.img_idx] += 1  #
+                    self.confusion_with_img_indices[gt_class][0][self.img_idx] += 1  #
 
         for i in range(len(detections)):
             if all_matches.shape[0] and all_matches[all_matches[:, 1] == i].shape[0] == 0:
                 detection_class = detection_classes[i]
-                self.confusion[self.num_classes, detection_class] += 1
+                self.confusion[0, detection_class] += 1
                 if self.img_idx is not None:
-                    self.confusion_with_img_indices[self.num_classes][detection_class][self.img_idx] += 1  #
+                    self.confusion_with_img_indices[0][detection_class][self.img_idx] += 1  #
 
     def get_confusion(self) -> np.ndarray:
         return self.confusion
