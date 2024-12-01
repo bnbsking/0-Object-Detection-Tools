@@ -138,7 +138,7 @@ def show(
     plt.tick_params(axis='both', which='major', labelsize=16)
     for r, g, b in colors:
         c2hex = lambda c: hex(int(c * 255))[2:].zfill(2)
-        plt.scatter([0], [0], c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
+        plt.scatter([], [], c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
 
     plt.legend(labels=class_list, fontsize=16)
     plt.imshow(img_gt)
