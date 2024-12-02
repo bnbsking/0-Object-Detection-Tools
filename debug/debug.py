@@ -1,11 +1,11 @@
 import sys
-ROOT="/Users/james.chao/Desktop/codeMore/mygithub/COSMOs"
+ROOT="/home/james/Desktop/mygithub/COSMOs"
 sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
 from cosmos.detection import DetectionAnalysis
 from cosmos.segmentation.format_conversion import coco_to_npy
-from cosmos.segmentation.visualization import show_npy
+from cosmos.segmentation.visualization import show_general
 
 
 # DetectionAnalysis(
@@ -31,15 +31,28 @@ from cosmos.segmentation.visualization import show_npy
 #     save_folder = f"{ROOT}/example/classification/output/multi_label",
 # )
 
-# coco_to_npy(
-#     "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/data/instance_coco",
-#     "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/data/instance_coco/coco.json",
-#     "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/data/instance_npy"
+coco_to_npy(
+    f"{ROOT}/example/segmentation/data/instance_coco",
+    f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
+    f"{ROOT}/example/segmentation/data/instance_general"
+)
+
+# show_npy(
+#     f"{ROOT}/example/segmentation/data/instance_general/img1.jpg",
+#     f"{ROOT}/example/segmentation/data/instance_general/contour_img1.npy",
+#     ["c0", "c1"],
+#     f"{ROOT}/example/segmentation/output/vis/exp1.jpg"
 # )
 
-show_npy(
-    "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/data/instance_npy/img1.jpg",
-    "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/data/instance_npy/img1.npy",
-    ["c0", "c1"],
-    "/Users/james.chao/Desktop/codeMore/mygithub/COSMOs/example/segmentation/output/vis/exp.jpg"
+# show_npy(
+#     f"{ROOT}/example/segmentation/data/instance_general/img1.jpg",
+#     f"{ROOT}/example/segmentation/data/instance_general/filled_img1.npy",
+#     ["c0", "c1"],
+#     f"{ROOT}/example/segmentation/output/vis/exp2.jpg"
+# )
+
+show_general(
+    f"{ROOT}/example/segmentation/data/instance_general",
+    "img1.jpg",
+    f"{ROOT}/example/segmentation/output/visualization"
 )

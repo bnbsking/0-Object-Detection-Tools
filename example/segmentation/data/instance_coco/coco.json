@@ -55,18 +55,43 @@
               50
           ],
           "iscrowd": 0
-      }
+      },
+      {
+        "id": 3,
+        "image_id": 1,
+        "category_id": 1,
+        "segmentation": [
+            [
+                150,
+                175,
+                200,
+                175,
+                200,
+                200,
+                150,
+                200
+            ]
+        ],
+        "area": 1250,
+        "bbox": [
+            150,
+            175,
+            200,
+            200
+        ],
+        "iscrowd": 0
+    }
   ],
   "categories": [
       {
           "id": 1,
-          "name": "car",
-          "supercategory": "vehicle"
+          "name": "rectangle",
+          "supercategory": null
       },
       {
           "id": 2,
-          "name": "tree",
-          "supercategory": "nature"
+          "name": "triangle",
+          "supercategory": null
       }
   ]
 }

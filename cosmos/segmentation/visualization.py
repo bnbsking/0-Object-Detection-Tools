@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Callable, Dict, List, Optional, Tuple
 
 import cv2
@@ -24,7 +25,7 @@ def show_npy(
     for category_id in np.unique(segmentation_mask):
         if category_id > 0:
             color = colors[category_id % len(colors)]
-            indices_x, indices_y = np.where(segmentation_mask == category_id)
+            indices_y, indices_x = np.where(segmentation_mask == category_id)
             for x, y in zip(indices_x, indices_y):
                 xlb = max(0, x - width)
                 xub = min(segmentation_mask.shape[1], x + width)
@@ -52,3 +53,22 @@ def show_npy(
     plt.grid('on')
 
     plt.show()
+
+
+def show_general(folder_path: str, img_name: str, save_folder: str = ".tmp"):
+    img_path = os.path.join(folder_path, img_name)
+    contour_path = os.path.join(folder_path, "contour_" + img_name.replace(".jpg", ".npy"))
+    filled_path = os.path.join(folder_path, "filled_" + img_name.replace(".jpg", ".npy"))
+    categories = json.load(open(os.path.join(folder_path, "categories.json"), 'r'))[1:]
+    show_npy(
+        img_path,
+        contour_path,
+        categories,
+        os.path.join(save_folder, "contour_" + img_name)
+    )
+    show_npy(
+        img_path,
+        filled_path,
+        categories,
+        os.path.join(save_folder, "filled_" + img_name)
+    )
