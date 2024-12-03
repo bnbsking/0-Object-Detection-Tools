@@ -224,31 +224,30 @@ class FormatConvertAny2General:
                 class_list[cat_dict["id"]] = cat_dict["name"]
         out = {"categories": class_list, "data": []}
 
-        for img_dict in tqdm(coco['images']):
-            # extract
+        # Get image_id to all info
+        img_id_to_all = {}
+        for img_dict in coco['images']:
             img_path = os.path.join(img_folder, img_dict['file_name'])
-            img_height = img_dict['height']
-            img_width = img_dict["width"]
-            gt_boxes = []
-            gt_cls = []
-            for ant_dict in filter(lambda ant_dict: ant_dict['image_id']==img_dict['id'], coco['annotations']):
-                xmin, ymin, w, h = ant_dict['bbox']
-                xmin, ymin, xmax, ymax = BoxConvert.any2voc("coco", xmin, ymin, w, h)
-                gt_boxes.append([int(xmin), int(ymin), int(xmax), int(ymax)])
-                gt_cls.append(int(ant_dict['category_id']) - cat_index_start + 1)
-            
-            # collect
-            out["data"].append(
-                {
-                    "img_path": os.path.abspath(img_path),
-                    "img_width": img_width,
-                    "img_height": img_height,
-                    "gt_boxes": gt_boxes,
-                    "gt_cls": gt_cls,
-                    "pd_boxes": [],
-                    "pd_probs": [],
-                }
+            img_id_to_all[img_dict['id']] = {
+                "img_path": os.path.abspath(img_path),
+                "img_width": img_dict['width'],
+                "img_height": img_dict['height'],
+                "gt_boxes": [],
+                "gt_cls": []
+            }
+
+        # Collect annotation
+        for ant_dict in coco['annotations']:
+            img_id = ant_dict['image_id']
+            xmin, ymin, w, h = ant_dict['bbox']
+            xmin, ymin, xmax, ymax = BoxConvert.any2voc("coco", xmin, ymin, w, h)
+            img_id_to_all[img_id]["gt_boxes"].append(
+                    [int(xmin), int(ymin), int(xmax), int(ymax)]
+                )
+            img_id_to_all[img_id]["gt_cls"].append(
+                int(ant_dict['category_id']) - cat_index_start + 1
             )
+        out["data"] = list(img_id_to_all.values())
 
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, "w", encoding="utf-8") as f:

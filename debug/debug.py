@@ -3,9 +3,17 @@ ROOT="/home/james/Desktop/mygithub/COSMOs"
 sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
-from cosmos.detection import DetectionAnalysis
+from cosmos.detection import DetectionAnalysis, show_coco
 from cosmos.segmentation.format_conversion import coco_to_general
 from cosmos.segmentation.visualization import show_general
+
+
+# show_coco(
+#     img_name = f"pic0.jpg",
+#     img_folder = f"{ROOT}/example/detection/data/coco",
+#     ant_path = f"{ROOT}/example/detection/data/coco/coco.json",
+#     use_cache = False
+# )
 
 
 # DetectionAnalysis(
@@ -45,16 +53,16 @@ from cosmos.segmentation.visualization import show_general
 #     f"{ROOT}/example/segmentation/data/semantic_general"
 # )
 
-show_general(
-    f"{ROOT}/example/segmentation/data/instance_general",
-    "img1.jpg",
-    "instance",
-    f"{ROOT}/example/segmentation/output/visualization/instance"
-)
+# show_general(
+#     f"{ROOT}/example/segmentation/data/instance_general",
+#     "img1.jpg",
+#     "instance",
+#     f"{ROOT}/example/segmentation/output/visualization/instance"
+# )
 
-show_general(
-    f"{ROOT}/example/segmentation/data/instance_general",
-    "img1.jpg",
-    "instance",
-    f"{ROOT}/example/segmentation/output/visualization/semantic"
-)
+# show_general(
+#     f"{ROOT}/example/segmentation/data/instance_general",
+#     "img1.jpg",
+#     "instance",
+#     f"{ROOT}/example/segmentation/output/visualization/semantic"
+# )

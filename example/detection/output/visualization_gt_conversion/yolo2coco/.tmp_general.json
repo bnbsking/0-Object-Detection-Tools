@@ -1,0 +1,91 @@
+{
+    "categories": [
+        "__background__",
+        "dog",
+        "cat"
+    ],
+    "data": [
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic0.jpg",
+            "img_width": 221,
+            "img_height": 228,
+            "gt_boxes": [
+                [
+                    0,
+                    23,
+                    220,
+                    228
+                ]
+            ],
+            "gt_cls": [
+                1
+            ],
+            "pd_boxes": [],
+            "pd_probs": []
+        },
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic1.jpg",
+            "img_width": 1200,
+            "img_height": 630,
+            "gt_boxes": [
+                [
+                    8,
+                    15,
+                    715,
+                    630
+                ],
+                [
+                    733,
+                    64,
+                    1174,
+                    588
+                ]
+            ],
+            "gt_cls": [
+                1,
+                2
+            ],
+            "pd_boxes": [],
+            "pd_probs": []
+        },
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic2.jpg",
+            "img_width": 364,
+            "img_height": 138,
+            "gt_boxes": [
+                [
+                    35,
+                    7,
+                    112,
+                    114
+                ],
+                [
+                    171,
+                    58,
+                    263,
+                    121
+                ],
+                [
+                    114,
+                    39,
+                    170,
+                    118
+                ],
+                [
+                    259,
+                    62,
+                    326,
+                    118
+                ]
+            ],
+            "gt_cls": [
+                1,
+                1,
+                2,
+                2
+            ],
+            "pd_boxes": [],
+            "pd_probs": []
+        }
+    ]
+}

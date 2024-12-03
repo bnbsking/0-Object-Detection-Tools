@@ -367,7 +367,7 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
                 self.run saves the output in self.metrics, where log_name is key and output is value
             save_path (str): path to save the result as json
         """
-        super().__init__(num_classes, labels, predictions, func_dicts, save_path, start_idx=1)
+        super().__init__(num_classes, labels, predictions, func_dicts, save_path)
         self.gt_class_cnts = self._get_gt_class_cnts(num_classes, labels)
 
     def _get_gt_class_cnts(self, num_classes: int, labels: List[np.ndarray]) -> List[int]:
