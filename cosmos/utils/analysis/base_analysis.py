@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import yaml
 
-from ..utils import pipelines
+from .. import pipelines
 
 
 class ClassificationAnalysis:

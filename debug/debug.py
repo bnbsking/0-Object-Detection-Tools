@@ -4,7 +4,7 @@ sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
 from cosmos.detection import DetectionAnalysis
-from cosmos.segmentation.format_conversion import coco_to_npy
+from cosmos.segmentation.format_conversion import coco_to_general
 from cosmos.segmentation.visualization import show_general
 
 
@@ -31,28 +31,30 @@ from cosmos.segmentation.visualization import show_general
 #     save_folder = f"{ROOT}/example/classification/output/multi_label",
 # )
 
-coco_to_npy(
-    f"{ROOT}/example/segmentation/data/instance_coco",
-    f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
-    f"{ROOT}/example/segmentation/data/instance_general"
-)
-
-# show_npy(
-#     f"{ROOT}/example/segmentation/data/instance_general/img1.jpg",
-#     f"{ROOT}/example/segmentation/data/instance_general/contour_img1.npy",
-#     ["c0", "c1"],
-#     f"{ROOT}/example/segmentation/output/vis/exp1.jpg"
+# coco_to_general(
+#     f"{ROOT}/example/segmentation/data/instance_coco",
+#     f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
+#     "instance",
+#     f"{ROOT}/example/segmentation/data/instance_general"
 # )
 
-# show_npy(
-#     f"{ROOT}/example/segmentation/data/instance_general/img1.jpg",
-#     f"{ROOT}/example/segmentation/data/instance_general/filled_img1.npy",
-#     ["c0", "c1"],
-#     f"{ROOT}/example/segmentation/output/vis/exp2.jpg"
+# coco_to_general(
+#     f"{ROOT}/example/segmentation/data/instance_coco",
+#     f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
+#     "semantic",
+#     f"{ROOT}/example/segmentation/data/semantic_general"
 # )
 
 show_general(
     f"{ROOT}/example/segmentation/data/instance_general",
     "img1.jpg",
-    f"{ROOT}/example/segmentation/output/visualization"
+    "instance",
+    f"{ROOT}/example/segmentation/output/visualization/instance"
+)
+
+show_general(
+    f"{ROOT}/example/segmentation/data/instance_general",
+    "img1.jpg",
+    "instance",
+    f"{ROOT}/example/segmentation/output/visualization/semantic"
 )
