@@ -4,7 +4,7 @@ sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
 from cosmos.detection import DetectionAnalysis, show_coco
-from cosmos.segmentation.format_conversion import coco_to_general
+from cosmos.segmentation.format_conversion import coco2general
 from cosmos.segmentation.visualization import show_general
 
 
@@ -39,30 +39,26 @@ from cosmos.segmentation.visualization import show_general
 #     save_folder = f"{ROOT}/example/classification/output/multi_label",
 # )
 
-# coco_to_general(
-#     f"{ROOT}/example/segmentation/data/instance_coco",
-#     f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
-#     "instance",
-#     f"{ROOT}/example/segmentation/data/instance_general"
-# )
-
-# coco_to_general(
-#     f"{ROOT}/example/segmentation/data/instance_coco",
-#     f"{ROOT}/example/segmentation/data/instance_coco/coco.json",
-#     "semantic",
-#     f"{ROOT}/example/segmentation/data/semantic_general"
+# coco2general(
+#     f"{ROOT}/example/segmentation/data/coco",
+#     f"{ROOT}/example/segmentation/data/coco/coco.json",
+#     f"{ROOT}/example/segmentation/data/general"
 # )
 
 # show_general(
-#     f"{ROOT}/example/segmentation/data/instance_general",
 #     "img1.jpg",
-#     "instance",
-#     f"{ROOT}/example/segmentation/output/visualization/instance"
+#     f"{ROOT}/example/segmentation/data/general/general.json",
+#     f"{ROOT}/example/segmentation/output/visualization/gt"
 # )
 
-# show_general(
-#     f"{ROOT}/example/segmentation/data/instance_general",
-#     "img1.jpg",
-#     "instance",
-#     f"{ROOT}/example/segmentation/output/visualization/semantic"
-# )
+show_general(
+    "img1.jpg",
+    f"{ROOT}/example/segmentation/prediction/instance/general.json",
+    f"{ROOT}/example/segmentation/output/visualization/pd_instance"
+)
+
+show_general(
+    "img1.jpg",
+    f"{ROOT}/example/segmentation/prediction/semantic/general.json",
+    f"{ROOT}/example/segmentation/output/visualization/pd_sementic"
+)

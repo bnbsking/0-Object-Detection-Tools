@@ -81,6 +81,15 @@ def show(
         box_width: int = 4,
         value_ratios: Tuple[int, int] = (1,1)
     ):
+    """
+    core of the all show functions
+    data_dict:
+        img_path (str): path to the image
+        gt_boxes (List[Tuple[int]]): list of ground truth boxes. [(xmin, ymin, xmax, ymax), ...]
+        gt_cls (List[int]): list of ground truth class ids
+        pd_boxes (List[Tuple[int]]): list of prediction boxes. [(xmin, ymin, xmax, ymax), ...]
+        pd_probs (List[List[float]]): list of prediction probabilities. [[p1, p2, ...], ...]
+    """
     class_list.pop(0) if class_list[0] == "__background__" else None
     img_raw = cv2.imread(data_dict["img_path"])[:, :, ::-1]/255
 
@@ -136,7 +145,7 @@ def show(
     plt.subplot(1, 2, 1)
     plt.title("GT", fontsize=24)
     plt.tick_params(axis='both', which='major', labelsize=16)
-    for r, g, b in colors:
+    for r, g, b in colors[1:]:
         c2hex = lambda c: hex(int(c * 255))[2:].zfill(2)
         plt.scatter([], [], c=f"#{c2hex(r)}{c2hex(g)}{c2hex(b)}")
 
