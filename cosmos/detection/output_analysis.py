@@ -1,67 +1,31 @@
-import json
 import os
 from typing import Dict, List, Optional
 
 import numpy as np
 import yaml
 
-from ..utils import pipelines
+from ..utils.analysis.base_analysis import BaseAnalysis
 
 
-class DetectionAnalysis:
+class DetectionAnalysis(BaseAnalysis):
     def __init__(
             self,
             ant_path: str,
             save_folder: str,
             pipeline_cfg_path: Optional[str] = None
         ):
-        # initialization
-        general = json.load(open(ant_path, "r", encoding="utf-8"))
-        class_list = general["categories"]
-        num_classes = len(general["categories"])
-        labels = self.get_labels(general["data"])
-        predictions = self.get_predictions(general["data"])
-        img_path_list = self.get_img_path_list(general["data"])
-        pipeline_cfg = self.get_pipeline_cfg(pipeline_cfg_path)
-
-        # metrics pipeline
-        metrics_pipeline_cls = getattr(pipelines, pipeline_cfg["metrics_pipeline"]["name"])
-        metrics_pipeline = metrics_pipeline_cls(
-            num_classes = num_classes,
-            labels = labels,
-            predictions = predictions,
-            func_dicts = pipeline_cfg["metrics_pipeline"]["func_dicts"],
-            save_path = os.path.join(save_folder, "metrics.json")
-        )
-        metrics = metrics_pipeline.run()
-
-        # plotting pipeline
-        plotting_pipeline_cls = getattr(pipelines, pipeline_cfg["plotting_pipeline"]["name"])
-        func_dicts = self.update_args_by_metrics(
-            metrics = metrics,
-            func_dicts = pipeline_cfg["plotting_pipeline"]["func_dicts"],
-        )
-        plotting_pipeline = plotting_pipeline_cls(
-            class_list = class_list[1:],
-            func_dicts = func_dicts,
-            save_folder = save_folder
-        )
-        plotting_pipeline.run()
-
-        # export pipeline
-        export_pipeline_cls = getattr(pipelines, pipeline_cfg["export_pipeline"]["name"])
-        func_dicts = self.update_args_by_metrics(
-            metrics = metrics,
-            func_dicts = pipeline_cfg["export_pipeline"]["func_dicts"],
-        )
-        export_pipeline = export_pipeline_cls(
-            data_path_list = img_path_list,
-            func_dicts = func_dicts,
-            save_folder = save_folder
-        )
-        export_pipeline.run()
+        super().__init__(ant_path, save_folder, pipeline_cfg_path)
 
     def get_labels(self, data_dict_list: List[Dict]) -> List[np.ndarray]:
+        """
+        Args:
+            data_dict_list (List[Dict]): A list of dicts, where each dictionary contains:
+                - gt_cls (List[int]): A list of class IDs.
+                - gt_boxes (List[List[int]]): A list of bounding box coordinates (xmin, ymin, xmax, ymax).
+        Returns:
+            labels (List[np.ndarray]): length is num of images. each shape=(labels_for_an_img, 5).
+                Each label is represented as (class_id, xmin, ymin, xmax, ymax).
+        """
         labels = []
         for data_dict in data_dict_list:
             img_label = []
@@ -71,6 +35,19 @@ class DetectionAnalysis:
         return labels
 
     def get_predictions(self, data_dict_list: List[Dict]) -> List[np.ndarray]:
+        """
+        Args:
+            data_dict_list (List[Dict]): A list of dictionaries where each dictionary contains:
+                - pd_probs (List[List[float]]): shape=(num_boxes, num_classes).
+                - pd_boxes (List[Tuple[int, int, int, int]]): shape=(num_boxes, 4).
+                    Each box is represented as (xmin, ymin, xmax, ymax).
+        Returns:
+            predictions (List[np.ndarray]): length is num of images. each shape=(num_boxes, 6).
+                Each prediction is represented as (xmin, ymin, xmax, ymax, conf, cid), where:
+                - xmin, ymin, xmax, ymax: Bounding box coordinates.
+                - conf: Confidence score of the prediction.
+                - cid: Class ID with the highest confidence score.
+        """
         predictions = []
         for data_dict in data_dict_list:
             img_detect = []
@@ -81,7 +58,7 @@ class DetectionAnalysis:
             predictions.append(np.array(img_detect))
         return predictions
     
-    def get_img_path_list(self, data_dict_list: List[Dict]) -> List[str]:
+    def get_data_path_list(self, data_dict_list: List[Dict]) -> List[str]:
         return [data_dict["img_path"] for data_dict in data_dict_list]
 
     def get_pipeline_cfg(self, pipeline_cfg_path: Optional[str] = None) -> Dict:
@@ -90,9 +67,3 @@ class DetectionAnalysis:
                 os.path.dirname(os.path.abspath(__file__)), "output_analysis.yaml"
             )
         return yaml.safe_load(open(pipeline_cfg_path, "r"))
-    
-    def update_args_by_metrics(self, metrics: Dict, func_dicts: Dict) -> Dict:
-        for func_dict in func_dicts:
-            for k, v in func_dict["func_args"].items():
-                func_dict["func_args"][k] = metrics[v]
-        return func_dicts

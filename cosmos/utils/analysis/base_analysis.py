@@ -1,6 +1,7 @@
+from abc import abstractmethod
 import json
 import os
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import numpy as np
 import yaml
@@ -8,7 +9,7 @@ import yaml
 from .. import pipelines
 
 
-class ClassificationAnalysis:
+class BaseAnalysis:
     def __init__(
             self,
             ant_path: str,
@@ -63,25 +64,21 @@ class ClassificationAnalysis:
         )
         export_pipeline.run()
 
-    def get_labels(self, data_dict_list: List[Dict]) -> np.array:
-        return np.array([data_dict["gt_cls"] for data_dict in data_dict_list])
+    @abstractmethod
+    def get_labels(self, data_dict_list: List[Dict]):
+        raise NotImplementedError
 
-    def get_predictions(self, data_dict_list: List[Dict]) -> np.ndarray:
-        """
-        Returns:
-            prediction (np.ndarray): shape=(data, num_classes) or (data, multi-label-dim, 2)
-        """
-        return np.array([data_dict["pd_probs"] for data_dict in data_dict_list])
+    @abstractmethod
+    def get_predictions(self, data_dict_list: List[Dict]):
+        raise NotImplementedError
     
+    @abstractmethod
     def get_data_path_list(self, data_dict_list: List[Dict]) -> List[str]:
-        return [data_dict["data_path"] for data_dict in data_dict_list]
+        raise NotImplementedError
 
+    @abstractmethod
     def get_pipeline_cfg(self, pipeline_cfg_path: Optional[str] = None) -> Dict:
-        if pipeline_cfg_path is None:
-            pipeline_cfg_path = os.path.join(\
-                os.path.dirname(os.path.abspath(__file__)), "output_analysis.yaml"
-            )
-        return yaml.safe_load(open(pipeline_cfg_path, "r"))
+        raise NotImplementedError
     
     def update_args_by_metrics(self, metrics: Dict, func_dicts: Dict) -> Dict:
         for func_dict in func_dicts:

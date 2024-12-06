@@ -9,7 +9,7 @@ from typing import Dict, List, Union
 import numpy as np
 from sklearn import metrics as skm
 
-from ..detection.detection_confusion_matrix import ConfusionMatrix
+from ..detection.confusion_matrix import DetectionConfusionMatrix, SegmentationConfusionMatrix
 
 
 class BaseMetricsPipeline:
@@ -32,6 +32,8 @@ class BaseMetricsPipeline:
     def _deserialize(self, data: Dict):
         if isinstance(data, dict):
             return {k: self._deserialize(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._deserialize(v) for v in data]
         elif isinstance(data, np.ndarray):
             return data.tolist()
         else:
@@ -43,7 +45,8 @@ class BaseMetricsPipeline:
                 getattr(self, func_dict["func_name"])(**func_dict["func_args"])
         os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
         with open(self.save_path, "w") as f:
-            json.dump(self._deserialize(self.metrics), f, indent=4)
+            metrics = self._deserialize(self.metrics)
+            json.dump(metrics, f, indent=4)
         return self.metrics
 
 
@@ -298,9 +301,7 @@ class ClassificationMetricsPipeline(CommonMetricsPipeline):
             gt_cls = self.labels.reshape(-1)
             pd_cls = (self.predictions[:, :, 1] >= threshold).reshape(-1).astype(np.int32)
         
-        confusion = np.zeros((self.num_classes, self.num_classes))
-        for gtc, pdc in zip(gt_cls, pd_cls):
-            confusion[gtc][pdc] += 1
+        confusion = skm.confusion_matrix(gt_cls, pd_cls, labels=list(range(self.num_classes)))
         return confusion
 
     def get_confusion_with_img_indices(
@@ -353,11 +354,12 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
             predictions: List[np.ndarray],
             func_dicts: List[Dict],
             save_path: str,
+            **kwargs
         ):
         """
         Given basic arguments, self.run iterates func_dicts and save all metrics as results.
         Args:
-            num_classes (int): number of classesm, where the first element is "__background__".
+            num_classes (int): number of classes, where the first element is "__background__".
             labels (List[np.ndarray]): length is the number of images. each numpy has shape (N, 5).
                 N is the number of ground truth, and 5 refers to (cid, xmin, ymin, xmax, ymax)
             predictions (List[np.ndarray]): length is the number of images. each numpy has shape (M, 5).
@@ -390,13 +392,14 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
             confusion = np.zeros(
                 (self.num_classes, self.num_classes)
             )  # (i, j) = (gt, pd)
-            for label, predictions in zip(self.labels, self.predictions):
-                img_confusion = ConfusionMatrix(
+
+            for labels, predictions in zip(self.labels, self.predictions):
+                img_confusion = DetectionConfusionMatrix(
                     self.num_classes,
                     CONF_THRESHOLD = threshold,
                     IOU_THRESHOLD = 0.5
                 )
-                img_confusion.process_batch(predictions, label)
+                img_confusion.process_batch(predictions, labels)
                 confusion += img_confusion.get_confusion()
             
             # update pr curve at the threshold from confusion
@@ -425,7 +428,7 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
         threshold = self.metrics[threshold_key] if threshold_key else threshold
         confusion = np.zeros((self.num_classes, self.num_classes))  # row: gt, col: pd
         for labels, predictions in zip(self.labels, self.predictions):
-            cm = ConfusionMatrix(
+            cm = DetectionConfusionMatrix(
                 self.num_classes,
                 CONF_THRESHOLD=threshold,
                 IOU_THRESHOLD=0.5
@@ -454,7 +457,7 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
             [Counter() for _ in range(self.num_classes)] for _ in range(self.num_classes)
         ]
         for img_idx, (labels, predictions) in enumerate(zip(self.labels, self.predictions)):
-            cm = ConfusionMatrix(
+            cm = DetectionConfusionMatrix(
                 self.num_classes,
                 CONF_THRESHOLD=threshold,
                 IOU_THRESHOLD=0.5,
@@ -465,4 +468,322 @@ class DetectionMetricsPipeline(CommonMetricsPipeline):
             for i in range(self.num_classes):
                 for j in range(self.num_classes):
                     confusion_with_img_indices[i][j] += single_confusion_with_img_indices[i][j]
+        return confusion_with_img_indices
+
+
+class InstanceSegmentationMetricsPipeline(CommonMetricsPipeline):
+    def __init__(
+            self,
+            num_classes: int,
+            labels: List[np.ndarray],
+            predictions: List[np.ndarray],
+            func_dicts: List[Dict],
+            save_path: str,
+            **kwargs
+        ):
+        """
+        Given basic arguments, self.run iterates func_dicts and save all metrics as results.
+        Args:
+            num_classes (int): number of classes, where the first element is "__background__".
+            labels (List[Dict]): length is num of images. Each dictionary contains:
+                - detection (np.array): shape=(labels_for_an_img, 5).
+                - segmentation_path (str): path to the segmentation mask.
+            predictions (List[Dict]): length is num of images. Each dictionary contains:
+                - detection (np.array): shape=(num_boxes, 6).
+                    Each prediction is represented as (xmin, ymin, xmax, ymax, conf, cid), where:
+                    - xmin, ymin, xmax, ymax: Bounding box coordinates.
+                    - conf: Confidence score of the prediction.
+                    - cid: Class ID with the highest confidence score.
+                - segmentation_path (str): path to the segmentation mask.
+            func_dicts (List[Dict]): length is the number of metrics function.
+                each dict has the format {"func_name": str, "args": Dict, "log_name": str}.
+                self.run saves the output in self.metrics, where log_name is key and output is value
+            save_path (str): path to save the result as json
+        """
+        super().__init__(num_classes, labels, predictions, func_dicts, save_path)
+        self.gt_class_cnts = self._get_gt_class_cnts(num_classes, labels)
+    
+    def _get_gt_class_cnts(self, num_classes: int, labels: List[Dict]) -> List[int]:
+        gt_class_cnts = [0] * (num_classes - 1)
+        for label_dict in labels:
+            label = label_dict["detection"]
+            for i in range(len(label)):
+                gt_class_cnts[label[i][0] - 1] += 1
+        return gt_class_cnts
+    
+    def get_pr_curves(self, k: int = 101) -> List[Dict[str, List[float]]]:
+        pr_curves = [
+            {
+                "precision": [0.] * k,
+                "recall": [0.] * k,
+            } for _ in range(self.num_classes - 1)
+        ]
+
+        for i, threshold in tqdm(enumerate(np.linspace(0, 1, k))):
+            # get confusion of the threshold
+            confusion = np.zeros(
+                (self.num_classes, self.num_classes)
+            )  # (i, j) = (gt, pd)
+            
+            for label_dict, prediction_dict in zip(self.labels, self.predictions):
+                label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+                prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+
+                img_confusion = SegmentationConfusionMatrix(
+                    self.num_classes,
+                    CONF_THRESHOLD = threshold,
+                    IOU_THRESHOLD = 0.5
+                )
+                img_confusion.process_batch(
+                    prediction_dict["detection"],
+                    label_dict["detection"],
+                    prediction_mask,
+                    label_mask
+                )
+                confusion += img_confusion.get_confusion()
+            
+            # update pr curve at the threshold from confusion
+            row_sum = confusion.sum(axis=1)
+            col_sum = confusion.sum(axis=0)
+            for cid in range(1, self.num_classes):
+                pr_curves[cid-1]["precision"][i] = confusion[cid][cid] / col_sum[cid] if col_sum[cid] else 0
+                pr_curves[cid-1]["recall"][i] = confusion[cid][cid] / row_sum[cid] if row_sum[cid] else 0
+
+        return pr_curves
+    
+    def get_confusion(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> np.ndarray:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion (np.ndarray[int]): shape=(num_classes, num_classes).
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        """
+        threshold = self.metrics[threshold_key] if threshold_key else threshold
+        confusion = np.zeros((self.num_classes, self.num_classes))  # row: gt, col: pd
+        
+        for label_dict, prediction_dict in zip(self.labels, self.predictions):
+            label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+            prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+            cm = SegmentationConfusionMatrix(
+                self.num_classes,
+                CONF_THRESHOLD=threshold,
+                IOU_THRESHOLD=0.5
+            )
+            cm.process_batch(
+                prediction_dict["detection"],
+                label_dict["detection"],
+                prediction_mask,
+                label_mask
+            )
+            confusion += cm.get_confusion()
+
+        return confusion
+    
+    def get_confusion_with_img_indices(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> List[List[Counter[int, int]]]:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion_with_img_indices (List[List[Counter[int, int]]]):
+                shape=(num_classes, num_classes). each grid is Counters (img_idx -> cnts) 
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        """
+        threshold = self.metrics[threshold_key] if threshold_key else threshold
+        confusion_with_img_indices = [
+            [Counter() for _ in range(self.num_classes)] for _ in range(self.num_classes)
+        ]
+
+        for img_idx, (label_dict, prediction_dict) in enumerate(zip(self.labels, self.predictions)):
+            label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+            prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+            cm = SegmentationConfusionMatrix(
+                self.num_classes,
+                CONF_THRESHOLD=threshold,
+                IOU_THRESHOLD=0.5,
+                img_idx=img_idx
+            )
+            cm.process_batch(
+                prediction_dict["detection"],
+                label_dict["detection"],
+                prediction_mask,
+                label_mask
+            )
+            single_confusion_with_img_indices = cm.get_confusion_with_img_indices()
+            for i in range(self.num_classes):
+                for j in range(self.num_classes):
+                    confusion_with_img_indices[i][j] += single_confusion_with_img_indices[i][j]
+        
+        return confusion_with_img_indices
+
+
+class SemanticSegmentationMetricsPipeline(CommonMetricsPipeline):
+    def __init__(
+            self,
+            num_classes: int,
+            labels: List[np.ndarray],
+            predictions: List[np.ndarray],
+            func_dicts: List[Dict],
+            save_path: str,
+            **kwargs
+        ):
+        """
+        Given basic arguments, self.run iterates func_dicts and save all metrics as results.
+        Args:
+            num_classes (int): number of classes, where the first element is "__background__".
+            labels (List[Dict]): length is num of images. Each dictionary contains:
+                - detection (np.array): empty
+                - segmentation_path (str): path to the segmentation mask.
+            predictions (List[Dict]): length is num of images. Each dictionary contains:
+                - detection (np.array): empty
+                - segmentation_path (str): path to the segmentation mask.
+            func_dicts (List[Dict]): length is the number of metrics function.
+                each dict has the format {"func_name": str, "args": Dict, "log_name": str}.
+                self.run saves the output in self.metrics, where log_name is key and output is value
+            save_path (str): path to save the result as json
+        """
+        super().__init__(num_classes, labels, predictions, func_dicts, save_path)
+        self.gt_class_cnts = self._get_gt_class_cnts(num_classes, labels)
+    
+    def _get_gt_class_cnts(self, num_classes: int, labels: List[Dict]) -> List[int]:
+        gt_class_cnts = [0] * (num_classes - 1)
+        for label_dict in labels:
+            label = np.load(label_dict["segmentation_path"], allow_pickle=True)
+            for i in range(1, label.shape[0]):
+                gt_class_cnts[i - 1] += int(np.sum(label[i]))
+        return gt_class_cnts
+    
+    def get_pr_curves(self, k: int = 101) -> List[Dict[str, List[float]]]:
+        pr_curves = [
+            {
+                "precision": [0.] * k,
+                "recall": [0.] * k,
+            } for _ in range(self.num_classes - 1)
+        ]
+
+        range_list = list(range(self.num_classes))
+        for i, threshold in tqdm(enumerate(np.linspace(0, 1, k))):
+            # update pr curve at the threshold from confusion
+            confusion = np.zeros(
+                (self.num_classes, self.num_classes)
+            )  # (i, j) = (gt, pd)
+            
+            for label_dict, prediction_dict in zip(self.labels, self.predictions):
+                label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+                label = label_mask.argmax(axis=0)
+                prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+                prediction_argmax = prediction_mask.argmax(axis=0)
+                prediction = np.where(
+                    prediction_mask.max(axis=0) >= threshold, prediction_argmax, 0
+                )
+                confusion += skm.confusion_matrix(
+                    label.reshape(-1),
+                    prediction.reshape(-1),
+                    labels = range_list
+                )
+            
+            # update pr curve at the threshold from confusion
+            row_sum = confusion.sum(axis=1)
+            col_sum = confusion.sum(axis=0)
+            for cid in range(1, self.num_classes):
+                pr_curves[cid-1]["precision"][i] = confusion[cid][cid] / col_sum[cid] if col_sum[cid] else 0
+                pr_curves[cid-1]["recall"][i] = confusion[cid][cid] / row_sum[cid] if row_sum[cid] else 0
+
+        return pr_curves
+    
+    def get_confusion(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> np.ndarray:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion (np.ndarray[int]): shape=(num_classes, num_classes).
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        """
+        threshold = self.metrics[threshold_key] if threshold_key else threshold
+        range_list = list(range(self.num_classes))
+        confusion = np.zeros((self.num_classes, self.num_classes))  # row: gt, col: pd
+        
+        for label_dict, prediction_dict in zip(self.labels, self.predictions):
+            label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+            label = label_mask.argmax(axis=0)
+            prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+            prediction_argmax = prediction_mask.argmax(axis=0)
+            
+            if self.num_classes == 2:
+                prediction = np.where(
+                    prediction_mask.max(axis=0) >= threshold, prediction_argmax, 0
+                )
+            else:
+                prediction = prediction_argmax
+            
+            confusion += skm.confusion_matrix(
+                label.reshape(-1),
+                prediction.reshape(-1),
+                labels = range_list
+            )
+
+        return confusion
+    
+    def get_confusion_with_img_indices(
+            self,
+            threshold: float = 0.5,
+            threshold_key: str = ""
+        ) -> List[List[Counter[int, int]]]:
+        """
+        Args:
+            threshold (float)
+            threshold_key (str): if specified, use self.metrics[threshold_key] instead of threshold
+        Returns:
+            confusion_with_img_indices (List[List[Counter[int, int]]]):
+                shape=(num_classes, num_classes). each grid is Counters (img_idx -> cnts) 
+        Dependency:
+            if threshold_key is specified, you must call self.get_best_threshold in advance
+        """
+        threshold = self.metrics[threshold_key] if threshold_key else threshold
+        range_list = list(range(self.num_classes))
+        confusion_with_img_indices = [
+            [Counter() for _ in range(self.num_classes)] for _ in range(self.num_classes)
+        ]
+
+        for img_idx, (label_dict, prediction_dict) in enumerate(zip(self.labels, self.predictions)):
+            label_mask = np.load(label_dict["segmentation_path"], allow_pickle=True)
+            label = label_mask.argmax(axis=0)
+            prediction_mask = np.load(prediction_dict["segmentation_path"], allow_pickle=True)
+            prediction_argmax = prediction_mask.argmax(axis=0)
+            
+            if self.num_classes == 2:
+                prediction = np.where(
+                    prediction_mask.max(axis=0) >= threshold, prediction_argmax, 0
+                )
+            else:
+                prediction = prediction_argmax
+            
+            confusion = skm.confusion_matrix(
+                label.reshape(-1),
+                prediction.reshape(-1),
+                labels = range_list
+            )
+
+            for i in range(self.num_classes):
+                for j in range(self.num_classes):
+                    confusion_with_img_indices[i][j] += Counter({img_idx: int(confusion[i][j])})
+        
         return confusion_with_img_indices
