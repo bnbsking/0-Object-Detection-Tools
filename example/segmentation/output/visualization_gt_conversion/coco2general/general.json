@@ -1,0 +1,41 @@
+{
+    "categories": [
+        "__background__",
+        "rectangle",
+        "triangle"
+    ],
+    "data": [
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/segmentation/output/visualization_gt_conversion/img1.jpg",
+            "img_width": 240,
+            "img_height": 240,
+            "gt_boxes": [
+                [
+                    50,
+                    100,
+                    100,
+                    150
+                ],
+                [
+                    150,
+                    50,
+                    190,
+                    100
+                ],
+                [
+                    150,
+                    175,
+                    200,
+                    200
+                ]
+            ],
+            "gt_cls": [
+                1,
+                2,
+                1
+            ],
+            "gt_contour_path": "/home/james/Desktop/mygithub/COSMOs/example/segmentation/output/visualization_gt_conversion/gt_contour_img1.npy",
+            "gt_filled_path": "/home/james/Desktop/mygithub/COSMOs/example/segmentation/output/visualization_gt_conversion/gt_filled_img1.npy"
+        }
+    ]
+}

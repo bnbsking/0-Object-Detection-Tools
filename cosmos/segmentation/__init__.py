@@ -1,6 +1,6 @@
 from .visualization import (
-    show_general,
-    show_semantic_mask
+    show_coco,
+    show_general
 )
 
 from .format_conversion import coco2general

@@ -1,6 +1,7 @@
+import importlib
 import os
 import json
-from typing import Callable, Dict, List, Literal, Optional, Tuple
+from typing import List, Optional
 
 import cv2
 import matplotlib.pyplot as plt
@@ -91,6 +92,7 @@ def show_semantic_mask(
         save_path: Optional[str] = None,
     ):
     """
+    Core of the visualization.
     Args:
         categories (List[str]): length is max_category_id
         img (np.ndarray): shape=(h, w, 3) and values are in [0, 255]
@@ -119,16 +121,23 @@ def show_semantic_mask(
         plt.scatter([], [], color=colors[i+1], label=categories[i])
     plt.legend(labels=categories)
 
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    plt.savefig(save_path)
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
     plt.show()
 
 
 def show_general(
         img_name: str,
         ant_path: str,
-        save_folder: str = ".tmp"
+        save_path: Optional[str] = None,
     ):
+    """
+    Args:
+        img_name (str): image name
+        ant_path (str): path to general.json
+        save_path (str): save path. if None, not saved. 
+    """
     general = json.load(open(ant_path, 'r'))
     data_dict = next(data_dict for data_dict in general["data"] if os.path.basename(data_dict["img_path"])==img_name)
     
@@ -150,5 +159,32 @@ def show_general(
         img,
         gt_contour_npy,
         pd_contour_npy,
-        os.path.join(save_folder, "vis_" + img_name)
+        save_path
     )
+
+
+def show_coco(
+        img_name: str,
+        img_folder: str,
+        ant_path: str,
+        save_folder: str = ".tmp",
+        use_cache: bool = True
+    ):
+    """
+    Show an image with its ground truth in coco format.
+    This func will convert coco format data into `general` format.
+    Args:
+        img_name (str): name of target image to be shown
+        img_folder (str): path to the image folder
+        ant_path (str): path to the coco label
+        save_folder (Optional[str], optional): folder saves the conversion result and visualized output
+        use_cache (bool, optional): if true, the conversion execute once only.
+    """
+    general_path = os.path.join(save_folder, "general.json")
+    
+    if not use_cache or not os.path.exists(general_path):
+        module = importlib.import_module(".format_conversion", package=__package__)
+        module.coco2general(img_folder, ant_path, save_folder)
+    save_path = os.path.join(save_folder, "vis_" + img_name)
+    
+    show_general(img_name, general_path, save_path)

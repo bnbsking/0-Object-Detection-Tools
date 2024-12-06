@@ -51,14 +51,23 @@ from cosmos.segmentation.visualization import show_general
 #     f"{ROOT}/example/segmentation/output/visualization/gt"
 # )
 
-show_general(
-    "img1.jpg",
-    f"{ROOT}/example/segmentation/prediction/instance/general.json",
-    f"{ROOT}/example/segmentation/output/visualization/pd_instance"
-)
+# show_coco(
+#     "img1.jpg",
+#     f"{ROOT}/example/segmentation/data/coco",
+#     f"{ROOT}/example/segmentation/data/coco/coco.json"
+# )
 
-show_general(
-    "img1.jpg",
-    f"{ROOT}/example/segmentation/prediction/semantic/general.json",
-    f"{ROOT}/example/segmentation/output/visualization/pd_sementic"
-)
+# show_general(
+#     "img1.jpg",
+#     f"{ROOT}/example/segmentation/data/general/general.json"
+# )
+
+# show_general(
+#     "img1.jpg",
+#     f"{ROOT}/example/segmentation/prediction/instance/general.json",
+# )
+
+# show_general(
+#     "img1.jpg",
+#     f"{ROOT}/example/segmentation/prediction/semantic/general.json",
+# )
