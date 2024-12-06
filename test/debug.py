@@ -3,6 +3,8 @@ ROOT="/home/james/Desktop/mygithub/COSMOs"
 sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
+from cosmos.classification.label_merging import ClassificationLabelMerging
+from cosmos.classification.active_learning import ClassificationActiveLearning
 from cosmos.detection import DetectionAnalysis, show_coco
 from cosmos.segmentation.format_conversion import coco2general
 from cosmos.segmentation.visualization import show_general
@@ -79,8 +81,50 @@ from cosmos.segmentation import SegmentationAnalysis
 #     task = "instance"
 # )
 
-SegmentationAnalysis(
-    ant_path = f"{ROOT}/example/segmentation/prediction/semantic/general.json",
-    save_folder = f"{ROOT}/example/segmentation/output/metrics/semantic",
-    task = "semantic"
+# SegmentationAnalysis(
+#     ant_path = f"{ROOT}/example/segmentation/prediction/semantic/general.json",
+#     save_folder = f"{ROOT}/example/segmentation/output/metrics/semantic",
+#     task = "semantic"
+# )
+
+# ClassificationLabelMerging(
+#     cfg_path_list = [
+#         f"{ROOT}/example/classification/data/single_label.json",
+#         f"{ROOT}/example/classification/data_another_labeler/single_label.json",
+#     ],
+#     save_path = f"{ROOT}/example/classification/output/label_merging/single_label.json"
+# )
+
+# ClassificationLabelMerging(
+#     cfg_path_list = [
+#         f"{ROOT}/example/classification/data/single_label_background.json",
+#         f"{ROOT}/example/classification/data_another_labeler/single_label_background.json",
+#     ],
+#     save_path = f"{ROOT}/example/classification/output/label_merging/single_label_background.json"
+# )
+
+# ClassificationLabelMerging(
+#     cfg_path_list = [
+#         f"{ROOT}/example/classification/data/multi_label.json",
+#         f"{ROOT}/example/classification/data_another_labeler/multi_label.json",
+#     ],
+#     save_path = f"{ROOT}/example/classification/output/label_merging/multi_label.json"
+# )
+
+# ClassificationActiveLearning(
+#     pred_path = f"{ROOT}/example/classification/prediction/single_label.json",
+#     save_path = f"{ROOT}/example/classification/output/active_learning/single_label.json",
+#     loss_name = "entropy"
+# )
+
+ClassificationActiveLearning(
+    pred_path = f"{ROOT}/example/classification/prediction/single_label_background.json",
+    save_path = f"{ROOT}/example/classification/output/active_learning/single_label_background.json",
+    loss_name = "entropy"
+)
+
+ClassificationActiveLearning(
+    pred_path = f"{ROOT}/example/classification/prediction/multi_label.json",
+    save_path = f"{ROOT}/example/classification/output/active_learning/multi_label.json",
+    loss_name = "entropy"
 )

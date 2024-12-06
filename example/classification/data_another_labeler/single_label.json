@@ -10,7 +10,7 @@
         },
         {
             "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic1.jpg",
-            "gt_cls": 1
+            "gt_cls": 0
         },
         {
             "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic2.jpg",
