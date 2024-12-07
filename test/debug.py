@@ -5,10 +5,12 @@ sys.path.append(ROOT)
 from cosmos.classification import ClassificationAnalysis
 from cosmos.classification.label_merging import ClassificationLabelMerging
 from cosmos.classification.active_learning import ClassificationActiveLearning
-from cosmos.detection import DetectionAnalysis, show_coco
+from cosmos.detection import DetectionAnalysis, show_coco, show_general
+from cosmos.detection import DetectionActiveLearningByHFlip
 from cosmos.segmentation.format_conversion import coco2general
-from cosmos.segmentation.visualization import show_general
+#from cosmos.segmentation.visualization import show_general
 from cosmos.segmentation import SegmentationAnalysis
+from cosmos.utils.detection.augmentation import horizontal_flip
 
 
 # show_coco(
@@ -117,14 +119,31 @@ from cosmos.segmentation import SegmentationAnalysis
 #     loss_name = "entropy"
 # )
 
-ClassificationActiveLearning(
-    pred_path = f"{ROOT}/example/classification/prediction/single_label_background.json",
-    save_path = f"{ROOT}/example/classification/output/active_learning/single_label_background.json",
-    loss_name = "entropy"
-)
+# ClassificationActiveLearning(
+#     pred_path = f"{ROOT}/example/classification/prediction/single_label_background.json",
+#     save_path = f"{ROOT}/example/classification/output/active_learning/single_label_background.json",
+#     loss_name = "entropy"
+# )
 
-ClassificationActiveLearning(
-    pred_path = f"{ROOT}/example/classification/prediction/multi_label.json",
-    save_path = f"{ROOT}/example/classification/output/active_learning/multi_label.json",
-    loss_name = "entropy"
+# ClassificationActiveLearning(
+#     pred_path = f"{ROOT}/example/classification/prediction/multi_label.json",
+#     save_path = f"{ROOT}/example/classification/output/active_learning/multi_label.json",
+#     loss_name = "entropy"
+# )
+
+# horizontal_flip(
+#     ant_path=f"{ROOT}/example/detection/prediction/general.json",
+#     save_path=f"{ROOT}/example/detection/prediction/general_horizontal_flip.json"
+# )
+
+# show_general(
+#     img_name = "pic0.jpg",
+#     ant_path = f"{ROOT}/example/detection/prediction/general_horizontal_flip.json",
+#     #save_folder = f"{ROOT}/example/detection/output/visualization/horizontal_flip"
+# )
+
+DetectionActiveLearningByHFlip(
+    pred_path_1 = f"{ROOT}/example/detection/prediction/general.json",
+    pred_path_2 = f"{ROOT}/example/detection/prediction/general_horizontal_flip.json",
+    save_path = f"{ROOT}/example/detection/output/active_learning/general.json"
 )

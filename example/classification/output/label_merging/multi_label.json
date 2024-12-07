@@ -9,6 +9,10 @@
             "gt_cls": [
                 1,
                 0
+            ],
+            "controversial": [
+                false,
+                false
             ]
         },
         {
@@ -16,14 +20,22 @@
             "gt_cls": [
                 1,
                 1
+            ],
+            "controversial": [
+                false,
+                false
             ]
         },
         {
             "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic2.jpg",
-            "gt_cls": null
+            "gt_cls": [
+                null,
+                1
+            ],
+            "controversial": [
+                true,
+                false
+            ]
         }
-    ],
-    "controversial_indices": [
-        2
     ]
 }
