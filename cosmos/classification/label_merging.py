@@ -18,7 +18,11 @@ class ClassificationLabelMerging:
             with open(cfg_path, 'r') as f:
                 cfg_list.append(json.load(f))
         self.format_consistency_check(cfg_list)
-        self.merge(cfg_list, save_path, ties_handling)
+        cfg_merged = self.merge(cfg_list, ties_handling)
+
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, 'w') as f:
+            json.dump(cfg_merged, f, indent=4)
 
     def format_consistency_check(self, cfg_list: List[Dict]):
         cfg0 = cfg_list[0]
@@ -49,9 +53,8 @@ class ClassificationLabelMerging:
     def merge(
             self,
             cfg_list: List[Dict],
-            save_path: str,
             ties_handling: Literal["random", "null"] = "null"
-        ):
+        ) -> Dict:
         cfg_merged = copy.deepcopy(cfg_list[0])
         if isinstance(cfg_list[0]["data"][0]["gt_cls"], int):
             label_dim = 0
@@ -75,6 +78,4 @@ class ClassificationLabelMerging:
                     cfg_merged["data"][i]["gt_cls"][j] = merged_cls
                     cfg_merged["data"][i]["controversial"][j] = not is_consensus
         
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        with open(save_path, 'w') as f:
-            json.dump(cfg_merged, f, indent=4)
+        return cfg_merged

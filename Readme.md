@@ -7,7 +7,7 @@ This repo provides tools for common computer vision tasks.
 | Tasks | Subtasks | Defined<br>Format | Visualization | Format<br>Conversion | Output<br>Analysis | Label<br>Merging | Active<br>Learning |
 | - | - | - | - | - | - | - | - |
 | Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](./example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](./example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](./example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](example/classification/s3_output_analysis.ipynb) | [ALL](example/classification/s4_label_merging.ipynb) | [Entropy](COSMOs/example/classification/s5_active_learning.ipynb) |
-| Detection      | - | [coco](./example/detection/data/coco)<br> [voc](./example/detection/data/voc)<br> [yolo](./example/detection/data/yolo)<br> [**GENERAL**](./example/detection/data/general.json)<br> | [ALL](example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/detection/s3_output_analysis.ipynb) | - | [horizontal<br>flip](example/detection/s5_active_learning.ipynb) |
+| Detection      | - | [coco](./example/detection/data/coco)<br> [voc](./example/detection/data/voc)<br> [yolo](./example/detection/data/yolo)<br> [**GENERAL**](./example/detection/data/general.json)<br> | [ALL](example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/detection/s3_output_analysis.ipynb) | [V](example/detection/s4_label_merging.ipynb) | [horizontal<br>flip](example/detection/s5_active_learning.ipynb) |
 | Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](example/segmentation/data/general)<sup>1+2</sup> | [ALL](example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/segmentation/s3_output_analysis.ipynb) |
 
 
@@ -191,7 +191,7 @@ from cosmos.segmentation import SegmentationAnalysis
 
 SegmentationAnalysis(
     ant_path = "example/segmentation/prediction/instance/general.json",
-    save_folder = "example/segmentation/output/metrics",
+    save_folder = "example/segmentation/output/metrics/instance",
     task = "instance",
 )
 ```

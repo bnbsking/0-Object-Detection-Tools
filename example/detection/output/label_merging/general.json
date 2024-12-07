@@ -1,0 +1,114 @@
+{
+    "categories": [
+        "__background__",
+        "dog",
+        "cat"
+    ],
+    "data": [
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic0.jpg",
+            "img_width": 221,
+            "img_height": 228,
+            "gt_boxes": [
+                [
+                    0,
+                    23,
+                    220,
+                    227
+                ]
+            ],
+            "gt_cls": [
+                1
+            ],
+            "controversial": [
+                false
+            ]
+        },
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic1.jpg",
+            "img_width": 1200,
+            "img_height": 630,
+            "gt_boxes": [
+                [
+                    8,
+                    15,
+                    715,
+                    630
+                ],
+                [
+                    733,
+                    64,
+                    1174,
+                    588
+                ]
+            ],
+            "gt_cls": [
+                1,
+                2
+            ],
+            "controversial": [
+                false,
+                false
+            ]
+        },
+        {
+            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic2.jpg",
+            "img_width": 364,
+            "img_height": 138,
+            "gt_boxes": [
+                [
+                    35,
+                    7,
+                    112,
+                    114
+                ],
+                [
+                    171,
+                    58,
+                    263,
+                    121
+                ],
+                [
+                    114,
+                    42,
+                    170,
+                    118
+                ],
+                [
+                    10,
+                    20,
+                    20,
+                    10
+                ],
+                [
+                    114,
+                    39,
+                    170,
+                    118
+                ],
+                [
+                    259,
+                    62,
+                    326,
+                    118
+                ]
+            ],
+            "gt_cls": [
+                1,
+                1,
+                1,
+                2,
+                2,
+                2
+            ],
+            "controversial": [
+                false,
+                false,
+                true,
+                true,
+                true,
+                true
+            ]
+        }
+    ]
+}

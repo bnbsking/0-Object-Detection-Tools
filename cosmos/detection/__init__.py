@@ -19,3 +19,4 @@ yolo2general = FormatConvertAny2General.yolo2general
 
 from .output_analysis import DetectionAnalysis
 from .active_learning import DetectionActiveLearningByHFlip
+from .label_merging import DetectionLabelMerging

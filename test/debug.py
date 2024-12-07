@@ -3,13 +3,17 @@ ROOT="/home/james/Desktop/mygithub/COSMOs"
 sys.path.append(ROOT)
 
 from cosmos.classification import ClassificationAnalysis
-from cosmos.classification.label_merging import ClassificationLabelMerging
-from cosmos.classification.active_learning import ClassificationActiveLearning
+from cosmos.classification import ClassificationLabelMerging
+from cosmos.classification import ClassificationActiveLearning
+
 from cosmos.detection import DetectionAnalysis, show_coco, show_general
 from cosmos.detection import DetectionActiveLearningByHFlip
-from cosmos.segmentation.format_conversion import coco2general
+from cosmos.detection import DetectionLabelMerging
+
+from cosmos.segmentation import coco2general
 #from cosmos.segmentation.visualization import show_general
 from cosmos.segmentation import SegmentationAnalysis
+
 from cosmos.utils.detection.augmentation import horizontal_flip
 
 
@@ -142,8 +146,17 @@ from cosmos.utils.detection.augmentation import horizontal_flip
 #     #save_folder = f"{ROOT}/example/detection/output/visualization/horizontal_flip"
 # )
 
-DetectionActiveLearningByHFlip(
-    pred_path_1 = f"{ROOT}/example/detection/prediction/general.json",
-    pred_path_2 = f"{ROOT}/example/detection/prediction/general_horizontal_flip.json",
-    save_path = f"{ROOT}/example/detection/output/active_learning/general.json"
+# DetectionActiveLearningByHFlip(
+#     pred_path_1 = f"{ROOT}/example/detection/prediction/general.json",
+#     pred_path_2 = f"{ROOT}/example/detection/prediction/general_horizontal_flip.json",
+#     save_path = f"{ROOT}/example/detection/output/active_learning/general.json"
+# )
+
+DetectionLabelMerging(
+    cfg_path_list = [
+        f"{ROOT}/example/detection/data/general.json",
+        f"{ROOT}/example/detection/data_another_labeler/general.json",
+    ],
+    save_path = f"{ROOT}/example/detection/output/label_merging/general.json",
+    ties_handling = "union"
 )
