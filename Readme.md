@@ -41,7 +41,7 @@ The formats can be summarized as following:
 | coco   | .json     | 1         | int   | (xmin, ymin, w, h)       | get label of an image |
 | yolo   | .txt      | len(imgs) | float | (cx, cy, w/2, h/2)       | visualization, compute metrics, etc. |
 | voc    | .xml      | len(imgs) | int   | (xmin, ymin, xmax, ymax) | get class list |
-| general| .json | 1 | int | (xmin, ymin, w, h) | **NO** |
+| general| .json | 1 | int | (xmin, ymin, xmax, ymax) | **NO** |
 
 
 + **[Segmentation]** Develop a [**GENERAL**](./example/segmentation/data/general) format to be the most convenient.
