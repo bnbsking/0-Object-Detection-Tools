@@ -19,6 +19,6 @@ class ClassificationActiveLearning:
     
     def entropy(self, pd_probs: Union[List[float], List[List[float]]]) -> float:
         if isinstance(pd_probs[0], float):
-            return -sum([p * log(p + 1e-10) for p in pd_probs])
+            return -sum([p * log(p + 1e-10) for p in pd_probs]) / len(pd_probs)
         else:
             return sum([self.entropy(p) for p in pd_probs]) / len(pd_probs)

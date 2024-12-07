@@ -15,7 +15,7 @@ class DetectionActiveLearningByHFlip:
         pred2 = horizontal_flip(pred2)
         self.format_consistency_check(pred1, pred2)
 
-        pred = copy.deepcopy(pred1)        
+        pred = copy.deepcopy(pred1)
         for i, (data_dict1, data_dict2) in enumerate(zip(pred1["data"], pred2["data"])):
             pred["data"][i]["loss"] = self.horizontal_consistency_loss(
                 data_dict1["pd_boxes"],
@@ -85,4 +85,4 @@ class DetectionActiveLearningByHFlip:
         for _, _, probs2 in pds:
             loss += -log(probs2[0] + 1e-10) * lambda_
         
-        return loss        
+        return loss

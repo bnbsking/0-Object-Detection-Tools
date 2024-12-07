@@ -13,6 +13,10 @@ from cosmos.detection import DetectionLabelMerging
 from cosmos.segmentation import coco2general
 #from cosmos.segmentation.visualization import show_general
 from cosmos.segmentation import SegmentationAnalysis
+from cosmos.segmentation import (
+    InstanceSegmentationActiveLearningByHFlip,
+    SemanticSegmentationActiveLearning
+)
 
 from cosmos.utils.detection.augmentation import horizontal_flip
 
@@ -152,11 +156,23 @@ from cosmos.utils.detection.augmentation import horizontal_flip
 #     save_path = f"{ROOT}/example/detection/output/active_learning/general.json"
 # )
 
-DetectionLabelMerging(
-    cfg_path_list = [
-        f"{ROOT}/example/detection/data/general.json",
-        f"{ROOT}/example/detection/data_another_labeler/general.json",
-    ],
-    save_path = f"{ROOT}/example/detection/output/label_merging/general.json",
-    ties_handling = "union"
+# DetectionLabelMerging(
+#     cfg_path_list = [
+#         f"{ROOT}/example/detection/data/general.json",
+#         f"{ROOT}/example/detection/data_another_labeler/general.json",
+#     ],
+#     save_path = f"{ROOT}/example/detection/output/label_merging/general.json",
+#     ties_handling = "union"
+# )
+
+InstanceSegmentationActiveLearningByHFlip(
+    pred_path_1 = f"{ROOT}/example/segmentation/prediction/instance/general.json",
+    pred_path_2 = f"{ROOT}/example/segmentation/prediction/instance_horizontal_flip/general.json",
+    save_path = f"{ROOT}/example/segmentation/output/active_learning/instance.json"
+)
+
+SemanticSegmentationActiveLearning(
+    pred_path = f"{ROOT}/example/segmentation/prediction/semantic/general.json",
+    save_path = f"{ROOT}/example/segmentation/output/active_learning/semantic.json",
+    loss_name = "entropy"
 )

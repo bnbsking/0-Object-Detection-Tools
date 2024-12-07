@@ -6,3 +6,8 @@ from .visualization import (
 from .format_conversion import coco2general
 
 from .output_analysis import SegmentationAnalysis
+
+from .active_learning import (
+    InstanceSegmentationActiveLearningByHFlip,
+    SemanticSegmentationActiveLearning
+)

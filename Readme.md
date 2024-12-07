@@ -1,14 +1,14 @@
 # COSMOs: Classification, Object detection, Segmentation MOduleS
 
 ## **Introduction**
-This repo provides tools for common computer vision tasks.
+This repo provides comprehensive preprocessing and post-processing tools for common **Computer Vision** tasks.
 
 
 | Tasks | Subtasks | Defined<br>Format | Visualization | Format<br>Conversion | Output<br>Analysis | Label<br>Merging | Active<br>Learning |
 | - | - | - | - | - | - | - | - |
 | Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](./example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](./example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](./example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](example/classification/s3_output_analysis.ipynb) | [ALL](example/classification/s4_label_merging.ipynb) | [Entropy](COSMOs/example/classification/s5_active_learning.ipynb) |
 | Detection      | - | [coco](./example/detection/data/coco)<br> [voc](./example/detection/data/voc)<br> [yolo](./example/detection/data/yolo)<br> [**GENERAL**](./example/detection/data/general.json)<br> | [ALL](example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/detection/s3_output_analysis.ipynb) | [V](example/detection/s4_label_merging.ipynb) | [horizontal<br>flip](example/detection/s5_active_learning.ipynb) |
-| Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](example/segmentation/data/general)<sup>1+2</sup> | [ALL](example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/segmentation/s3_output_analysis.ipynb) |
+| Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](example/segmentation/data/general)<sup>1+2</sup> | [ALL](example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/segmentation/s3_output_analysis.ipynb) | - | [instance<br>semantic<br>](example/segmentation/s5_active_learning.ipynb) |
 
 
 + "bg" means background. If there is background class, it must be class 0 in this repo.
@@ -82,6 +82,29 @@ ClassificationAnalysis(
 )
 ```
 
++ Label Merging:
+```python
+from cosmos.classification import ClassificationLabelMerging
+
+ClassificationLabelMerging(
+    cfg_path_list = [
+        "example/classification/data/single_label.json",
+        "example/classification/data_another_labeler/single_label.json",
+    ],
+    save_path = f"example/classification/output/label_merging/single_label.json"
+)
+```
+
++ Active Learning (see more in the [example](example/classification/s5_active_learning.ipynb)):
+```python
+from cosmos.classification import ClassificationActiveLearning
+
+ClassificationActiveLearning(
+    pred_path = "example/classification/prediction/single_label.json",
+    save_path = "example/classification/output/active_learning/single_label.json",
+    loss_name = "entropy"
+)
+```
 
 ## **Quick Start - Object detection**
 + Format Conversion (see more in the [example](./example/detection/s2_format_conversion.ipynb))
@@ -145,6 +168,30 @@ DetectionAnalysis(
 )
 ```
 
++ Label Merging:
+```python
+from cosmos.detection import DetectionLabelMerging
+
+DetectionLabelMerging(
+    cfg_path_list = [
+        "example/detection/data/general.json",
+        "example/detection/data_another_labeler/general.json",
+    ],
+    save_path = "example/detection/output/label_merging/general.json",
+    ties_handling = "union"
+)
+```
+
++ Active Learning:
+```python
+from cosmos.detection import DetectionActiveLearningByHFlip
+
+DetectionActiveLearningByHFlip(
+    pred_path_1 = f"{ROOT}/example/detection/prediction/general.json",
+    pred_path_2 = f"{ROOT}/example/detection/prediction/general_horizontal_flip.json",
+    save_path = f"{ROOT}/example/detection/output/active_learning/general.json"
+)
+```
 
 ## **Quick Start - Segmentation**
 + Format Conversion (see more in the [example](example/segmentation/s2_format_conversion.ipynb))
@@ -208,6 +255,30 @@ SegmentationAnalysis(
 )
 ```
 
++ Active Learning:
+```python
+from cosmos.segmentation import (
+    InstanceSegmentationActiveLearningByHFlip,
+    SemanticSegmentationActiveLearning
+)
+
+InstanceSegmentationActiveLearningByHFlip(
+    pred_path_1 = "example/segmentation/prediction/instance/general.json",
+    pred_path_2 = "example/segmentation/prediction/instance_horizontal_flip/general.json",
+    save_path = "example/segmentation/output/active_learning/instance.json"
+)
+```
+
+or
+
+```python
+SemanticSegmentationActiveLearning(
+    pred_path = "example/segmentation/prediction/semantic/general.json",
+    save_path = "example/segmentation/output/active_learning/semantic.json",
+    loss_name = "entropy"
+)
+```
+
 ## **Examples**
 + **[detection]**: format conversion workflow
 ![.](pictures/detection_workflow.png)
@@ -220,3 +291,14 @@ SegmentationAnalysis(
 
 + prf curves
 ![.](pictures/prf_curves.jpg)
+
+
+## **More**
++ Feel free to ask if you have any question.
++ Notice not supported
+    + segmentation general2coco
+    + segmentation label merging
+
+
+## **Acknowledgement**
++ Confusion Matrix reference [here](https://github.com/kaanakan/object_detection_confusion_matrix/blob/master/confusion_matrix.py)
