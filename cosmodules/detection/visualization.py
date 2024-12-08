@@ -157,8 +157,10 @@ def show(
     plt.tick_params(axis='both', which='major', labelsize=16)
     plt.imshow(img_pd)
     
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
     plt.show()
-    plt.savefig(save_path) if save_path else None
     plt.close()
 
 
