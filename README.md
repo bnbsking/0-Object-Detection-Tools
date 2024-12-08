@@ -1,4 +1,4 @@
-# COSMOs: Classification, Object detection, Segmentation MOduleS
+# COSMOduleS: Classification, Object detection, Segmentation MOduleS
 
 ## **Introduction**
 This repo provides comprehensive preprocessing and post-processing tools for common **Computer Vision** tasks.
@@ -6,7 +6,7 @@ This repo provides comprehensive preprocessing and post-processing tools for com
 
 | Tasks | Subtasks | Defined<br>Format | Visualization | Format<br>Conversion | Output<br>Analysis | Label<br>Merging | Active<br>Learning |
 | - | - | - | - | - | - | - | - |
-| Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](./example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](./example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](./example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](example/classification/s3_output_analysis.ipynb) | [ALL](example/classification/s4_label_merging.ipynb) | [Entropy](COSMOs/example/classification/s5_active_learning.ipynb) |
+| Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](./example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](./example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](./example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](example/classification/s3_output_analysis.ipynb) | [ALL](example/classification/s4_label_merging.ipynb) | [Entropy](example/classification/s5_active_learning.ipynb) |
 | Detection      | - | [coco](./example/detection/data/coco)<br> [voc](./example/detection/data/voc)<br> [yolo](./example/detection/data/yolo)<br> [**GENERAL**](./example/detection/data/general.json)<br> | [ALL](example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/detection/s3_output_analysis.ipynb) | [V](example/detection/s4_label_merging.ipynb) | [horizontal<br>flip](example/detection/s5_active_learning.ipynb) |
 | Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](example/segmentation/data/general)<sup>1+2</sup> | [ALL](example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/segmentation/s3_output_analysis.ipynb) | - | [instance<br>semantic<br>](example/segmentation/s5_active_learning.ipynb) |
 
@@ -60,7 +60,7 @@ The formats can be summarized as following:
 
 ## **Installation**
 ```bash
-git clone https://github.com/bnbsking/COSMOs
+git clone https://github.com/bnbsking/COSMOduleS.git
 pip install -e .
 ```
 
@@ -70,11 +70,11 @@ pip install -e .
         + [single_label](./example/classification/data/single_label.json)
         + [multilabel](./example/classification/data/multi_label.json)
         + [single_label_background](./example/classification/data/single_label_background.json)
-    + The analysis pipeline is at [here](./cosmos/classification/output_analysis.yaml)
+    + The analysis pipeline is at [here](./cosmodules/classification/output_analysis.yaml)
     + See more in the [example](./example/classification/s3_output_analysis.ipynb)
 
 ```python
-from cosmos.classification import ClassificationAnalysis
+from cosmodules.classification import ClassificationAnalysis
 
 ClassificationAnalysis(
     ant_path = "example/classification/data/single_label.json",
@@ -84,7 +84,7 @@ ClassificationAnalysis(
 
 + Label Merging:
 ```python
-from cosmos.classification import ClassificationLabelMerging
+from cosmodules.classification import ClassificationLabelMerging
 
 ClassificationLabelMerging(
     cfg_path_list = [
@@ -97,7 +97,7 @@ ClassificationLabelMerging(
 
 + Active Learning (see more in the [example](example/classification/s5_active_learning.ipynb)):
 ```python
-from cosmos.classification import ClassificationActiveLearning
+from cosmodules.classification import ClassificationActiveLearning
 
 ClassificationActiveLearning(
     pred_path = "example/classification/prediction/single_label.json",
@@ -110,7 +110,7 @@ ClassificationActiveLearning(
 + Format Conversion (see more in the [example](./example/detection/s2_format_conversion.ipynb))
 
 ```python
-from cosmos.detection import coco2any
+from cosmodules.detection import coco2any
 
 coco2any(
     tgt_foramt = "voc",
@@ -123,7 +123,7 @@ coco2any(
 or 
 
 ```python
-from cosmos.detection import coco2general
+from cosmodules.detection import coco2general
 
 coco2general(
     img_folder = "example/detection/data/coco",
@@ -135,7 +135,7 @@ coco2general(
 + Visualization (see more in the [example](./example/detection/s1_visualization_gt_and_pd.ipynb))
 
 ```python
-from cosmos.detection import show_coco
+from cosmodules.detection import show_coco
 
 show_coco(
     img_name = "pic0.jpg",
@@ -147,7 +147,7 @@ show_coco(
 or
 
 ```python
-from cosmos.detection import show_general
+from cosmodules.detection import show_general
 
 show_general(
     img_name = "pic0.jpg",
@@ -157,10 +157,10 @@ show_general(
 
 + Output Analysis
     + Please use the above `Format conversion` to change data format as [general](./example/detection/data/general.json)
-    + The analysis pipeline is at [here](./cosmos/detection/output_analysis.yaml)
+    + The analysis pipeline is at [here](./cosmodules/detection/output_analysis.yaml)
 
 ```python
-from cosmos.detection import DetectionAnalysis
+from cosmodules.detection import DetectionAnalysis
 
 DetectionAnalysis(
     ant_path = "example/detection/data/general.json",
@@ -170,7 +170,7 @@ DetectionAnalysis(
 
 + Label Merging:
 ```python
-from cosmos.detection import DetectionLabelMerging
+from cosmodules.detection import DetectionLabelMerging
 
 DetectionLabelMerging(
     cfg_path_list = [
@@ -184,7 +184,7 @@ DetectionLabelMerging(
 
 + Active Learning:
 ```python
-from cosmos.detection import DetectionActiveLearningByHFlip
+from cosmodules.detection import DetectionActiveLearningByHFlip
 
 DetectionActiveLearningByHFlip(
     pred_path_1 = f"{ROOT}/example/detection/prediction/general.json",
@@ -197,7 +197,7 @@ DetectionActiveLearningByHFlip(
 + Format Conversion (see more in the [example](example/segmentation/s2_format_conversion.ipynb))
 
 ```python
-from cosmos.segmentation import coco2general
+from cosmodules.segmentation import coco2general
 
 coco2general(
     img_folder = "example/segmentation/data/coco",
@@ -209,7 +209,7 @@ coco2general(
 + Visualization (see more in the [example](example/segmentation/s1_visualization_gt_and_pd.ipynb))
 
 ```python
-from cosmos.segmentation import show_coco
+from cosmodules.segmentation import show_coco
 
 show_coco(
     img_name = "img1.jpg",
@@ -221,7 +221,7 @@ show_coco(
 or
 
 ```python
-from cosmos.segmentation import show_general
+from cosmodules.segmentation import show_general
 
 show_general(
     img_name = "img1.jpg",
@@ -231,10 +231,10 @@ show_general(
 
 + Output Analysis
     + Please use the above `Format conversion` to change data format as [general](./example/segmentation/data/general)
-    + The analysis pipeline is at [here](./cosmos/segmentation/output_analysis_instance.yaml)
+    + The analysis pipeline is at [here](./cosmodules/segmentation/output_analysis_instance.yaml)
 
 ```python
-from cosmos.segmentation import SegmentationAnalysis
+from cosmodules.segmentation import SegmentationAnalysis
 
 SegmentationAnalysis(
     ant_path = "example/segmentation/prediction/instance/general.json",
@@ -246,7 +246,7 @@ SegmentationAnalysis(
 or
 
 ```Python
-from cosmos.segmentation import SegmentationAnalysis
+from cosmodules.segmentation import SegmentationAnalysis
 
 SegmentationAnalysis(
     ant_path = "example/segmentation/prediction/semantic/general.json",
@@ -257,7 +257,7 @@ SegmentationAnalysis(
 
 + Active Learning:
 ```python
-from cosmos.segmentation import (
+from cosmodules.segmentation import (
     InstanceSegmentationActiveLearningByHFlip,
     SemanticSegmentationActiveLearning
 )

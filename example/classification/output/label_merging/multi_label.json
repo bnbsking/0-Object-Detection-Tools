@@ -5,7 +5,7 @@
     ],
     "data": [
         {
-            "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic0.jpg",
+            "data_path": "/home/james/Desktop/mygithub/COSMOduleS/example/classification/data/pic0.jpg",
             "gt_cls": [
                 1,
                 0
@@ -16,7 +16,7 @@
             ]
         },
         {
-            "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic1.jpg",
+            "data_path": "/home/james/Desktop/mygithub/COSMOduleS/example/classification/data/pic1.jpg",
             "gt_cls": [
                 1,
                 1
@@ -27,7 +27,7 @@
             ]
         },
         {
-            "data_path": "/home/james/Desktop/mygithub/COSMOs/example/classification/data/pic2.jpg",
+            "data_path": "/home/james/Desktop/mygithub/COSMOduleS/example/classification/data/pic2.jpg",
             "gt_cls": [
                 null,
                 1

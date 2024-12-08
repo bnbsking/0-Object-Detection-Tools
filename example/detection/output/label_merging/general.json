@@ -6,7 +6,7 @@
     ],
     "data": [
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic0.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/coco/pic0.jpg",
             "img_width": 221,
             "img_height": 228,
             "gt_boxes": [
@@ -25,7 +25,7 @@
             ]
         },
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic1.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/coco/pic1.jpg",
             "img_width": 1200,
             "img_height": 630,
             "gt_boxes": [
@@ -52,7 +52,7 @@
             ]
         },
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/coco/pic2.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/coco/pic2.jpg",
             "img_width": 364,
             "img_height": 138,
             "gt_boxes": [

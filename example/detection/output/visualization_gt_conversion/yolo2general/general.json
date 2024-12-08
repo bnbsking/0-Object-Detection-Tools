@@ -6,7 +6,7 @@
     ],
     "data": [
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic0.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/yolo/pic0.jpg",
             "img_width": 221,
             "img_height": 228,
             "gt_boxes": [
@@ -24,7 +24,7 @@
             "pd_probs": []
         },
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic1.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/yolo/pic1.jpg",
             "img_width": 1200,
             "img_height": 630,
             "gt_boxes": [
@@ -49,7 +49,7 @@
             "pd_probs": []
         },
         {
-            "img_path": "/home/james/Desktop/mygithub/COSMOs/example/detection/data/yolo/pic2.jpg",
+            "img_path": "/home/james/Desktop/mygithub/COSMOduleS/example/detection/data/yolo/pic2.jpg",
             "img_width": 364,
             "img_height": 138,
             "gt_boxes": [

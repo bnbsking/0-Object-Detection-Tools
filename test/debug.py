@@ -1,24 +1,24 @@
 import sys
-ROOT="/home/james/Desktop/mygithub/COSMOs"
+ROOT="/home/james/Desktop/mygithub/COSMOduleS"
 sys.path.append(ROOT)
 
-from cosmos.classification import ClassificationAnalysis
-from cosmos.classification import ClassificationLabelMerging
-from cosmos.classification import ClassificationActiveLearning
+from cosmodules.classification import ClassificationAnalysis
+from cosmodules.classification import ClassificationLabelMerging
+from cosmodules.classification import ClassificationActiveLearning
 
-from cosmos.detection import DetectionAnalysis, show_coco, show_general
-from cosmos.detection import DetectionActiveLearningByHFlip
-from cosmos.detection import DetectionLabelMerging
+from cosmodules.detection import DetectionAnalysis, show_coco, show_general
+from cosmodules.detection import DetectionActiveLearningByHFlip
+from cosmodules.detection import DetectionLabelMerging
 
-from cosmos.segmentation import coco2general
-#from cosmos.segmentation.visualization import show_general
-from cosmos.segmentation import SegmentationAnalysis
-from cosmos.segmentation import (
+from cosmodules.segmentation import coco2general
+#from cosmodules.segmentation.visualization import show_general
+from cosmodules.segmentation import SegmentationAnalysis
+from cosmodules.segmentation import (
     InstanceSegmentationActiveLearningByHFlip,
     SemanticSegmentationActiveLearning
 )
 
-from cosmos.utils.detection.augmentation import horizontal_flip
+from cosmodules.utils.detection.augmentation import horizontal_flip
 
 
 # show_coco(
