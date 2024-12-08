@@ -3,7 +3,8 @@
 <div align="center">
   <a href="https://pypi.python.org/pypi/cosmodules"><img src="https://img.shields.io/pypi/v/cosmodules.svg"></a><br>
   <a href="https://pypi.org/project/cosmodules"><img src="https://img.shields.io/pypi/pyversions/cosmodules.svg"></a><br>
-  <a href="https://github.com/bnbsking/COSMOduleS"><img src="https://img.shields.io/github/v/release/bnbsking/COSMOduleS"></a><br>
+  <a href="https://github.com/bnbsking/COSMOduleS"><img src="https://github.com/bnbsking/COSMOduleS/pictures/github-mark-white.svg" width="20" height="20"></a>
+  <!--<a href="https://github.com/bnbsking/COSMOduleS"><img src="https://img.shields.io/github/v/release/bnbsking/COSMOduleS"></a><br>-->
 </div>
 
 ## **Introduction**
