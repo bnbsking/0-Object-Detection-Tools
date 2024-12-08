@@ -1,18 +1,20 @@
 # COSMOduleS: Classification, Object detection, Segmentation MOduleS
 
+Github: https://github.com/bnbsking/COSMOduleS
+
 ## **Introduction**
 This repo provides comprehensive preprocessing and post-processing tools for common **Computer Vision** tasks.
 
 
 | Tasks | Subtasks | Defined<br>Format | Visualization | Format<br>Conversion | Output<br>Analysis | Label<br>Merging | Active<br>Learning |
 | - | - | - | - | - | - | - | - |
-| Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](./example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](./example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](./example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](example/classification/s3_output_analysis.ipynb) | [ALL](example/classification/s4_label_merging.ipynb) | [Entropy](example/classification/s5_active_learning.ipynb) |
-| Detection      | - | [coco](./example/detection/data/coco)<br> [voc](./example/detection/data/voc)<br> [yolo](./example/detection/data/yolo)<br> [**GENERAL**](./example/detection/data/general.json)<br> | [ALL](example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/detection/s3_output_analysis.ipynb) | [V](example/detection/s4_label_merging.ipynb) | [horizontal<br>flip](example/detection/s5_active_learning.ipynb) |
-| Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](example/segmentation/data/general)<sup>1+2</sup> | [ALL](example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](example/segmentation/s3_output_analysis.ipynb) | - | [instance<br>semantic<br>](example/segmentation/s5_active_learning.ipynb) |
+| Classification | binary<sup>1</sup><br> binary-bg<sup>2</sup><br> multi-class<sup>1</sup><br> multiclass-bg<sup>2</sup><br> multi-binary<sup>3</sup><br> | [single_label](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label.json)<sup>1</sup><br> [single_label_bg](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label_background.json)<sup>2</sup><br> [multi_label](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/multi_label.json)<sup>3</sup> | - | - | [metrics<br>plotting<br>export](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/s3_output_analysis.ipynb) | [ALL](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/s4_label_merging.ipynb) | [Entropy](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/s5_active_learning.ipynb) |
+| Detection      | - | [coco](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/coco)<br> [voc](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/voc)<br> [yolo](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/yolo)<br> [**GENERAL**](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/general.json)<br> | [ALL](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s1_visualization_gt_and_pd.ipynb) | [between ANY<br>two types](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s3_output_analysis.ipynb) | [V](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s4_label_merging.ipynb) | [horizontal<br>flip](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s5_active_learning.ipynb) |
+| Segmentation   | instance<sup>1</sup><br> semantic<sup>2</sup><br> | [coco](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/data/coco)<sup>1+2</sup><br> [**GENERAL**](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/data/general)<sup>1+2</sup> | [ALL](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s1_visualization_gt_and_pd.ipynb) | [coco2general](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s2_format_conversion.ipynb) | [metrics<br>plotting<br>export](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s3_output_analysis.ipynb) | - | [instance<br>semantic<br>](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s5_active_learning.ipynb) |
 
 
 + "bg" means background. If there is background class, it must be class 0 in this repo.
-+ Adding prediction results after the defined format can use the visualization and output analysis. All the formats with predictions are in `example/*/prediction`, e.g. [here](example/detection/prediction/general.json).
++ Adding prediction results after the defined format can use the visualization and output analysis. All the formats with predictions are in `example/*/prediction`, e.g. [here](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/prediction/general.json).
 
 
 ## **Motivation**
@@ -21,11 +23,11 @@ This repo provides comprehensive preprocessing and post-processing tools for com
 
 | task                                          | label idx min | compute class-0 metrics | threshold optimization | data format |  
 | -                                             | -             | -                       | -                      | -           |
-| binary classification                         | 0             | V                       | V                      | [single_label](./example/classification/data/single_label.json)       |
-| binary classification (cls-0 background)      | 1             |                         | V                      | [single_label_background](./example/classification/data/single_label_background.json) |
+| binary classification                         | 0             | V                       | V                      | [single_label](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label.json)       |
+| binary classification (cls-0 background)      | 1             |                         | V                      | [single_label_background](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label_background.json) |
 | multi-class classification                    | 0             | V                       |                        | single_label |
 | multi-class classification (cls-0 background) | 1             |                         | V                      | single_label_background |
-| multi-label classification (cls-0 background) | 0             |                         | V                      | [multi_label](./example/classification/data/multi_label.json)   |
+| multi-label classification (cls-0 background) | 0             |                         | V                      | [multi_label](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/multi_label.json)   |
 
 
 + **[Classification]** threshold optimization
@@ -33,7 +35,7 @@ This repo provides comprehensive preprocessing and post-processing tools for com
     + `multi-class classification (cls-0 background)` and `multi-label classification (cls-0 background)` take the mean of all optimized threshold for each foreground class
 
 
-+ **[Object Detection]** Develop a [**GENERAL**](./example/detection/data/general.json) format to be the most convenient.
++ **[Object Detection]** Develop a [**GENERAL**](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/general.json) format to be the most convenient.
 
 The formats can be summarized as following:
 | format | extension | files     | type  | box                      | disadvantage |
@@ -44,7 +46,7 @@ The formats can be summarized as following:
 | general| .json | 1 | int | (xmin, ymin, xmax, ymax) | **NO** |
 
 
-+ **[Segmentation]** Develop a [**GENERAL**](./example/segmentation/data/general) format to be the most convenient.
++ **[Segmentation]** Develop a [**GENERAL**](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/data/general) format to be the most convenient.
 
 
 | Includes         | Content | Advantage |
@@ -55,7 +57,7 @@ The formats can be summarized as following:
 | *.jpg            | Raw data | - |
 
 
-+ Segmentation prediction format: `(num_classes, H, W) with 0~1 float values (probability)`. e.g. [here](example/segmentation/prediction/instance/pd_filled_img1.npy)
++ Segmentation prediction format: `(num_classes, H, W) with 0~1 float values (probability)`. e.g. [here](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/prediction/instance/pd_filled_img1.npy)
 
 
 ## **Installation**
@@ -67,11 +69,11 @@ pip install -e .
 ## **Quick Start - Classification**
 + Output Analysis:
     + Please conform your data format as either of one
-        + [single_label](./example/classification/data/single_label.json)
-        + [multilabel](./example/classification/data/multi_label.json)
-        + [single_label_background](./example/classification/data/single_label_background.json)
-    + The analysis pipeline is at [here](./cosmodules/classification/output_analysis.yaml)
-    + See more in the [example](./example/classification/s3_output_analysis.ipynb)
+        + [single_label](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label.json)
+        + [multilabel](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/multi_label.json)
+        + [single_label_background](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/data/single_label_background.json)
+    + The analysis pipeline is at [here](https://github.com/bnbsking/COSMOduleS/blob/main/cosmodules/classification/output_analysis.yaml)
+    + See more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/s3_output_analysis.ipynb)
 
 ```python
 from cosmodules.classification import ClassificationAnalysis
@@ -95,7 +97,7 @@ ClassificationLabelMerging(
 )
 ```
 
-+ Active Learning (see more in the [example](example/classification/s5_active_learning.ipynb)):
++ Active Learning (see more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/classification/s5_active_learning.ipynb)):
 ```python
 from cosmodules.classification import ClassificationActiveLearning
 
@@ -107,7 +109,7 @@ ClassificationActiveLearning(
 ```
 
 ## **Quick Start - Object detection**
-+ Format Conversion (see more in the [example](./example/detection/s2_format_conversion.ipynb))
++ Format Conversion (see more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s2_format_conversion.ipynb))
 
 ```python
 from cosmodules.detection import coco2any
@@ -132,7 +134,7 @@ coco2general(
 )
 ```
 
-+ Visualization (see more in the [example](./example/detection/s1_visualization_gt_and_pd.ipynb))
++ Visualization (see more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/s1_visualization_gt_and_pd.ipynb))
 
 ```python
 from cosmodules.detection import show_coco
@@ -156,8 +158,8 @@ show_general(
 ```
 
 + Output Analysis
-    + Please use the above `Format conversion` to change data format as [general](./example/detection/data/general.json)
-    + The analysis pipeline is at [here](./cosmodules/detection/output_analysis.yaml)
+    + Please use the above `Format conversion` to change data format as [general](https://github.com/bnbsking/COSMOduleS/blob/main/example/detection/data/general.json)
+    + The analysis pipeline is at [here](https://github.com/bnbsking/COSMOduleS/blob/main/cosmodules/detection/output_analysis.yaml)
 
 ```python
 from cosmodules.detection import DetectionAnalysis
@@ -194,7 +196,7 @@ DetectionActiveLearningByHFlip(
 ```
 
 ## **Quick Start - Segmentation**
-+ Format Conversion (see more in the [example](example/segmentation/s2_format_conversion.ipynb))
++ Format Conversion (see more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s2_format_conversion.ipynb))
 
 ```python
 from cosmodules.segmentation import coco2general
@@ -206,7 +208,7 @@ coco2general(
 )
 ```
 
-+ Visualization (see more in the [example](example/segmentation/s1_visualization_gt_and_pd.ipynb))
++ Visualization (see more in the [example](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/s1_visualization_gt_and_pd.ipynb))
 
 ```python
 from cosmodules.segmentation import show_coco
@@ -230,8 +232,8 @@ show_general(
 ```
 
 + Output Analysis
-    + Please use the above `Format conversion` to change data format as [general](./example/segmentation/data/general)
-    + The analysis pipeline is at [here](./cosmodules/segmentation/output_analysis_instance.yaml)
+    + Please use the above `Format conversion` to change data format as [general](https://github.com/bnbsking/COSMOduleS/blob/main/example/segmentation/data/general)
+    + The analysis pipeline is at [here](https://github.com/bnbsking/COSMOduleS/blob/main/cosmodules/segmentation/output_analysis_instance.yaml)
 
 ```python
 from cosmodules.segmentation import SegmentationAnalysis
@@ -281,16 +283,16 @@ SemanticSegmentationActiveLearning(
 
 ## **Examples**
 + **[detection]**: format conversion workflow
-![.](pictures/detection_workflow.png)
+![.](https://github.com/bnbsking/COSMOduleS/blob/main/pictures/detection_workflow.png)
 
 + detection visualization
-![.](pictures/detection_visualization.jpg)
+![.](https://github.com/bnbsking/COSMOduleS/blob/main/pictures/detection_visualization.jpg)
 
 + confusion
-![.](pictures/confusion.jpg)
+![.](https://github.com/bnbsking/COSMOduleS/blob/main/pictures/confusion.jpg)
 
 + prf curves
-![.](pictures/prf_curves.jpg)
+![.](https://github.com/bnbsking/COSMOduleS/blob/main/pictures/prf_curves.jpg)
 
 
 ## **More**
