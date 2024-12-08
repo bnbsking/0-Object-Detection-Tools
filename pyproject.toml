@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cosmodules"
-version = "0.1.2"
+version = "1.0.0"
 description = "This repo provides comprehensive preprocessing and post-processing tools for common **Computer Vision** tasks."
 authors = ["bnbsking <bnbsking@gmail.com>"]
 license = "MIT"
