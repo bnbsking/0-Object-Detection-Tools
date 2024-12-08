@@ -61,7 +61,7 @@ The formats can be summarized as following:
 ## **Installation**
 ```bash
 git clone https://github.com/bnbsking/COSMOs
-pip install numpy matplotlib opencv-python scikit-learn
+pip install -e .
 ```
 
 ## **Quick Start - Classification**

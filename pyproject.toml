@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "cosmos"
+version = "0.1.0"
+description = "This repo provides comprehensive preprocessing and post-processing tools for common **Computer Vision** tasks."
+authors = ["bnbsking <bnbsking@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.1.3"
+matplotlib = "^3.9.3"
+opencv-python-headless = "^4.10.0.84"
+scikit-learn = "^1.5.2"
+pyyaml = "^6.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
