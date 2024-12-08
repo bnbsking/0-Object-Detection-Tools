@@ -67,6 +67,12 @@ The formats can be summarized as following:
 
 ## **Installation**
 ```bash
+pip install cosmodules
+```
+
+or
+
+```bash
 git clone https://github.com/bnbsking/COSMOduleS.git
 pip install -e .
 ```
